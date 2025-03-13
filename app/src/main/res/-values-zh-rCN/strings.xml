@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">我的应用</string>
+    <string name="title_home">主页</string>
+    <string name="title_dashboard">仪表盘</string>
+    <string name="title_notifications">通知</string>
+    <string name="textview">文字视图</string>
+    <string name="button1">按钮</string>
+    <string name="switch1">切换开关</string>
+    <string name="snackbar1">按钮已点击</string>
+    <string name="NFCNA">该设备不支持 NFC 功能</string>
+</resources>

@@ -1,0 +1,31 @@
+<resources>
+    <string name="title_home">读取</string>
+    <string name="title_dashboard">写入</string>
+    <string name="title_notifications">设置</string>
+    <string name="app_name">NFC 通信</string>
+    <string name="textview">基于 NFC 的多模式通信实践开发</string>
+    <string name="button1">检测本机 NFC 状态</string>
+    <string name="switch1">切换开关</string>
+    <string name="snackbar1">按钮已点击</string>
+    <string name="NFCNA">该设备不支持 NFC 功能</string>
+    <string name="NFCSP">该设备已启用 NFC 功能</string>
+    <string name="exit">退出</string>
+    <string name="enable_NFC">请先在设置中启用 NFC 功能</string>
+    <string name="gotoSettings">去启用</string>
+    <string name="scanATag">扫描一个 NFC 标签以显示内容</string>
+    <string name="scannedTag">该 NFC 标签的类型：%1$s</string>
+    <string name="displayContent">标签中的记录内容将在此处显示</string>
+    <string name="notSupport">暂未支持此类型</string>
+    <string name="scanned">扫描到 NFC 标签</string>
+    <string name="title_activity_write_card">写卡</string>
+    <string name="goto_write_card">跳转到写卡</string>
+    <string name="goto_read_card">跳转到读卡</string>
+    <string name="text_to_write">在此处键入想要写入卡片的文本</string>
+    <string name="button_to_write">写入</string>
+    <string name="text">[文本] %1$s\n</string>
+    <string name="uri">[链接] %1$s\n</string>
+    <string name="app">[应用] %1$s\n</string>
+    <string name="wifi">[Wi-Fi] %1$s\n</string>
+    <string name="bluetooth">[蓝牙] %1$s\n</string>
+    <string name="unknown">[未知] %1$s\n</string>
+</resources>
