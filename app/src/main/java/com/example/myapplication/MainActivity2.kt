@@ -197,24 +197,44 @@ class MainActivity2 : AppCompatActivity() {
                         // 处理消息数组
                         val stringBuilder = StringBuilder()
 
+                        // 修改后的 handleNfcIntent 记录处理逻辑
                         messages.forEach { ndefMessage ->
                             ndefMessage.records.forEach { record ->
-                                when {
-                                    // 处理文本类型记录
-                                    record.tnf == NdefRecord.TNF_WELL_KNOWN
-                                            && record.type.contentEquals(NdefRecord.RTD_TEXT) -> {
-                                        val text = parseTextRecord(record)
-                                        stringBuilder.append(getString(R.string.text, text))
+                                when (record.tnf) {
+                                    NdefRecord.TNF_WELL_KNOWN -> {
+                                        when {
+                                            record.type.contentEquals(NdefRecord.RTD_TEXT) -> {
+                                                val text = parseTextRecord(record)
+                                                stringBuilder.append(getString(R.string.text_type, text))
+                                            }
+                                            record.type.contentEquals(NdefRecord.RTD_URI) -> {
+                                                val uri = parseUriRecord(record)
+                                                stringBuilder.append(getString(R.string.uri_type, uri))
+                                            }
+                                        }
                                     }
-                                    // 处理 URI 类型记录
-                                    record.tnf == NdefRecord.TNF_WELL_KNOWN
-                                            && record.type.contentEquals(NdefRecord.RTD_URI) -> {
-                                        val uri = parseUriRecord(record)
-                                        stringBuilder.append(getString(R.string.uri, uri))
+                                    NdefRecord.TNF_MIME_MEDIA -> {
+                                        when (record.toMimeType()) {
+                                            "application/vnd.bluetooth.ep.oob" -> {
+                                                val bluetooth = processBluetoothRecord(record)
+                                                stringBuilder.append(getString(R.string.bluetooth_type, bluetooth))
+                                            }
+                                            "application/vnd.wfa.wsc" -> {
+                                                val wifi = parseWifiRecord(record)
+                                                stringBuilder.append(getString(R.string.wifi_type, wifi))
+                                            }
+                                        }
                                     }
-                                    // 处理其他类型
+                                    NdefRecord.TNF_EXTERNAL_TYPE -> {
+                                        when (String(record.type)) {
+                                            "android.com:pkg" -> {
+                                                val app = parseApplicationRecord(record)
+                                                stringBuilder.append(getString(R.string.app_type, app))
+                                            }
+                                        }
+                                    }
                                     else -> {
-                                        stringBuilder.append(getString(R.string.unknown, record.toHexString()))
+                                        stringBuilder.append(getString(R.string.unknown_type, record.toHexString()))
                                     }
                                 }
                             }
@@ -287,5 +307,71 @@ class MainActivity2 : AppCompatActivity() {
     // 将未知记录转为十六进制字符串
     private fun NdefRecord.toHexString(): String {
         return this.payload.joinToString("") { "%02x".format(it) }
+    }
+
+    // 解析应用程序记录的扩展函数
+    private fun parseApplicationRecord(record: NdefRecord): String {
+        if (record.tnf == NdefRecord.TNF_EXTERNAL_TYPE
+            && record.type.contentEquals("android.com:pkg".toByteArray())) {
+            val packageName = String(record.payload, Charsets.UTF_8)
+            // 示例：直接启动对应应用
+            // val intent = packageManager.getLaunchIntentForPackage(packageName)
+            // startActivity(intent)
+            return packageName
+        }
+        else {
+            return ""
+        }
+    }
+
+    // 处理 Wi-Fi
+    private fun parseWifiRecord(record: NdefRecord): String {
+        val stringBuilder = StringBuilder()
+        if (record.toMimeType() == "application/vnd.wfa.wsc") {
+            val payload = record.payload
+            // 按 WFA 规范解析二进制数据
+            val ssid = parseWscString(payload, 0x1045) // SSID 标签代码 0x1045
+            val password = parseWscString(payload, 0x1027) // 密码标签代码 0x1027
+            stringBuilder.append(getString(R.string.ssid, ssid))
+            stringBuilder.append(getString(R.string.wifi_password, password))
+        }
+        return stringBuilder.toString()
+    }
+
+    private fun parseWscString(payload: ByteArray, tagCode: Int): String? {
+        var index = 0
+        while (index < payload.size) {
+            val type = (payload[index].toInt() shl 8) or payload[index + 1].toInt()
+            val length = (payload[index + 2].toInt() shl 8) or payload[index + 3].toInt()
+            if (type == tagCode) {
+                return String(payload, index + 4, length, Charsets.UTF_8)
+            }
+            index += 4 + length
+        }
+        return null
+    }
+
+    // 处理蓝牙
+    private fun processBluetoothRecord(record: NdefRecord): String {
+        val stringBuilder = StringBuilder()
+        when {
+            // 检查蓝牙配对记录（常见格式）
+            record.toUri()?.scheme == "bluetooth" -> {
+                val btUri = record.toUri()
+                val macAddress = btUri?.host // 蓝牙 MAC 地址
+                val name = btUri?.path?.removePrefix("/") // 设备名称
+                // 示例URI：bluetooth://00:11:22:33:44:55/MyHeadset
+                stringBuilder.append(getString(R.string.bluetooth_mac, macAddress))
+                stringBuilder.append(getString(R.string.bluetooth_device_name, name))
+            }
+
+            // 处理 Android Beam 蓝牙配对记录（旧格式）
+            record.toMimeType() == "application/vnd.bluetooth.ep.oob" -> {
+                val payload = record.payload
+                // 解析蓝牙OOB数据（需要按规范解析）
+                stringBuilder.append(payload)
+            }
+        }
+        return stringBuilder.toString()
     }
 }

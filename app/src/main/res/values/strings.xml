@@ -22,10 +22,14 @@
     <string name="goto_read_card">跳转到读卡</string>
     <string name="text_to_write">在此处键入想要写入卡片的文本</string>
     <string name="button_to_write">写入</string>
-    <string name="text">[文本] %1$s\n</string>
-    <string name="uri">[链接] %1$s\n</string>
-    <string name="app">[应用] %1$s\n</string>
-    <string name="wifi">[Wi-Fi] %1$s\n</string>
-    <string name="bluetooth">[蓝牙] %1$s\n</string>
-    <string name="unknown">[未知] %1$s\n</string>
+    <string name="text_type">[文本] %1$s\n</string>
+    <string name="uri_type">[链接] %1$s\n</string>
+    <string name="app_type">[应用] %1$s\n</string>
+    <string name="wifi_type">[Wi-Fi] %1$s\n</string>
+    <string name="bluetooth_type">[蓝牙] %1$s\n</string>
+    <string name="unknown_type">[未知] %1$s\n</string>
+    <string name="ssid">SSID：%1$s</string>
+    <string name="wifi_password">密码：%1$s\n</string>
+    <string name="bluetooth_device_name">蓝牙设备名称：%1$s\n</string>
+    <string name="bluetooth_mac">蓝牙设备 MAC 地址：%1$s\n</string>
 </resources>
