@@ -182,7 +182,7 @@ class WriteCard : ComponentActivity() {
     }
 
     private fun navigateBackToRead() {
-        startActivity(Intent(this, MainActivity2::class.java))
+        // startActivity(Intent(this, MainActivity2::class.java))
         finish()
     }
 
