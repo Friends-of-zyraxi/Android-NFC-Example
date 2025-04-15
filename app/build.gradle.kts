@@ -74,4 +74,15 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    // Compose 相关依赖
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)  // 预览功能主依赖
+    implementation(libs.androidx.material3)
+    // 更新 ConstraintLayout Compose 依赖版本
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.0")
+    // 添加这两行调试依赖 ↓
+    debugImplementation(libs.androidx.ui.tooling)      // 必须添加
+    debugImplementation("androidx.compose.ui:ui-tooling:1.6.0") // 如果仍有问题添加这行
 }

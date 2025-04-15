@@ -24,8 +24,7 @@
         <activity
             android:name=".WriteCard"
             android:exported="false"
-            android:label="@string/title_activity_write_card"
-            android:theme="@style/Theme.MyApplication" />
+            android:theme="@style/Theme.MyApplication" /> <!-- 使用Compose主题 -->
 
         <activity
             android:name=".MainActivity2"
@@ -73,5 +72,6 @@
             </intent-filter>
         </activity>
     </application>
+
 
 </manifest>

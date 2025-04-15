@@ -1,79 +1,119 @@
+@file:OptIn(ExperimentalStdlibApi::class) // 添加在文件顶部
 package com.example.myapplication
 
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
-import android.nfc.tech.IsoDep
-import android.nfc.tech.MifareClassic
-import android.nfc.tech.MifareUltralight
-import android.nfc.tech.Ndef
-import android.nfc.tech.NdefFormatable
-import android.nfc.tech.NfcA
-import android.nfc.tech.NfcB
-import android.nfc.tech.NfcF
-import android.nfc.tech.NfcV
+import android.nfc.tech.*
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
 import com.example.myapplication.databinding.ActivityMain2Binding
 import com.google.android.material.snackbar.Snackbar
 import java.nio.charset.Charset
 
 class MainActivity2 : AppCompatActivity() {
     private lateinit var binding: ActivityMain2Binding
-
-    private var defaultNfcAdapter: NfcAdapter? = null //声明为可空类型
-    private lateinit var pendingIntent: PendingIntent //延迟初始化
+    private var nfcAdapter: NfcAdapter? = null
+    private lateinit var pendingIntent: PendingIntent
     private lateinit var intentFiltersArray: Array<IntentFilter>
     private lateinit var techListsArray: Array<Array<String>>
 
+    companion object {
+        private const val TAG = "NFC_DEMO"
+        private val URI_PREFIX_MAP = mapOf(
+            0x00.toByte() to "",
+            0x01.toByte() to "http://www.",
+            0x02.toByte() to "https://www.",
+            0x03.toByte() to "http://",
+            0x04.toByte() to "https://",
+            0x05.toByte() to "tel:",
+            0x06.toByte() to "mailto:",
+            0x07.toByte() to "ftp://anonymous:anonymous@",
+            0x08.toByte() to "ftp://ftp.",
+            0x09.toByte() to "ftps://",
+            0x0A.toByte() to "sftp://",
+            0x0B.toByte() to "smb://",
+            0x0C.toByte() to "nfs://",
+            0x0D.toByte() to "ftp://",
+            0x0E.toByte() to "dav://",
+            0x0F.toByte() to "news:",
+            0x10.toByte() to "telnet://",
+            0x11.toByte() to "imap:",
+            0x12.toByte() to "rtsp://",
+            0x13.toByte() to "urn:",
+            0x14.toByte() to "pop:",
+            0x15.toByte() to "sip:",
+            0x16.toByte() to "sips:",
+            0x17.toByte() to "tftp:",
+            0x18.toByte() to "btspp://",
+            0x19.toByte() to "btl2cap://",
+            0x1A.toByte() to "btgoep://",
+            0x1B.toByte() to "tcpobex://",
+            0x1C.toByte() to "irdaobex://",
+            0x1D.toByte() to "file://",
+            0x1E.toByte() to "urn:epc:id:",
+            0x1F.toByte() to "urn:epc:tag:",
+            0x20.toByte() to "urn:epc:pat:",
+            0x21.toByte() to "urn:epc:raw:",
+            0x22.toByte() to "urn:epc:",
+            0x23.toByte() to "urn:nfc:"
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMain2Binding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 初始化UI事件
         binding.button.setOnClickListener {
             if (checkNfcAvailability(false)) {
                 binding.button.visibility = View.INVISIBLE
             }
         }
 
+        // 在MainActivity2的按钮点击事件中：
         binding.gotoWriteCard.setOnClickListener {
-            val intent = Intent()
-            intent.setClass(this, WriteCard::class.java)
-            startActivity(intent)
-            finish()
+            startActivity(Intent(this, WriteCard::class.java))
+            // 如果需要过渡动画：
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
 
-        defaultNfcAdapter = NfcAdapter.getDefaultAdapter(this)    //定义一个 adapter
+        // 初始化NFC适配器
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this)
         checkNfcAvailability(true)
 
+        // 创建PendingIntent
         val intent = Intent(this, javaClass).apply {
             addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
-            PendingIntent.FLAG_MUTABLE
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_MUTABLE
+            } else {
+                0
+            }
         )
+
+        // 设置Intent过滤器
         val ndef = IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED).apply {
             try {
-                addDataType("*/*")    /* Handles all MIME based dispatches.
-                                 You should specify only the ones that you need. */
+                addDataType("*/*")
             } catch (e: IntentFilter.MalformedMimeTypeException) {
-                throw RuntimeException("fail", e)
+                throw RuntimeException("Failed to add MIME type", e)
             }
         }
 
@@ -82,7 +122,8 @@ class MainActivity2 : AppCompatActivity() {
             IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED),
             IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED)
         )
-        // 配置支持的所有技术类型
+
+        // 支持的所有NFC技术类型
         techListsArray = arrayOf(
             arrayOf(
                 NfcA::class.java.name,
@@ -99,52 +140,42 @@ class MainActivity2 : AppCompatActivity() {
     }
 
     private fun checkNfcAvailability(isFirstCheck: Boolean): Boolean {
-
-        when {
-            defaultNfcAdapter == null -> {
-                class ExitApp : View.OnClickListener {
-
-                    override fun onClick(v: View) {
-                        finish() // 直接关闭 Activity
-                    }
-                }
-                Snackbar.make(findViewById(R.id.button), R.string.NFCNA, Snackbar.LENGTH_SHORT)
-                    .setAction(R.string.exit, ExitApp())
-                    .show()
-                return false
+        return when {
+            nfcAdapter == null -> {
+                showSnackbar(R.string.NFCNA, R.string.exit) { finish() }
+                false
             }
-
-            !defaultNfcAdapter!!.isEnabled -> {
-                class OpenNfcSettings : View.OnClickListener {
-
-                    override fun onClick(v: View) {
-                        startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) //跳转到系统 NFC 设置界面
-                    }
+            !nfcAdapter!!.isEnabled -> {
+                showSnackbar(R.string.enable_NFC, R.string.gotoSettings) {
+                    startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
                 }
-                Snackbar.make(findViewById(R.id.button), R.string.enable_NFC, Snackbar.LENGTH_SHORT)
-                    .setAction(R.string.gotoSettings, OpenNfcSettings())
-                    .show()
-                return false
+                false
             }
-
             else -> {
                 if (!isFirstCheck) {
-                    Snackbar.make(findViewById(R.id.button), R.string.NFCSP, Snackbar.LENGTH_SHORT)
-                        .show()
+                    showSnackbar(R.string.NFCSP, 0)
                 }
-                return true
+                true
             }
         }
     }
 
-    public override fun onPause() {
-        super.onPause()
-        defaultNfcAdapter?.disableForegroundDispatch(this)
+    private fun showSnackbar(messageRes: Int, actionRes: Int, action: (() -> Unit)? = null) {
+        Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_SHORT).apply {
+            if (actionRes != 0 && action != null) {
+                setAction(actionRes) { action.invoke() }
+            }
+        }.show()
     }
 
-    public override fun onResume() {
+    override fun onPause() {
+        super.onPause()
+        nfcAdapter?.disableForegroundDispatch(this)
+    }
+
+    override fun onResume() {
         super.onResume()
-        defaultNfcAdapter?.enableForegroundDispatch(
+        nfcAdapter?.enableForegroundDispatch(
             this,
             pendingIntent,
             intentFiltersArray,
@@ -152,226 +183,182 @@ class MainActivity2 : AppCompatActivity() {
         )
     }
 
-    public override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent) // 修复错误 1
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
         handleNfcIntent(intent)
-
-        // 修复错误 2 的两种方式：
-
-        // 方式 1：使用新 API 写法（推荐，API 33+）
-        // val tagFromIntent: Tag? = intent.getParcelableExtra(
-        //     NfcAdapter.EXTRA_TAG,
-        //     Tag::class.java
-        // )
-
-        // 方式 2：兼容旧 API 的强制类型转换（不推荐）
-//        @Suppress("DEPRECATION")
-//        val tagFromIntent: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG) as Tag?
-//
-//        tagFromIntent?.let {
-//
-//        }
     }
 
     private fun handleNfcIntent(intent: Intent) {
-        Toast.makeText(this, R.string.scanned, Toast.LENGTH_SHORT).show()
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_NFC)) {
+            Toast.makeText(this, "设备不支持NFC", Toast.LENGTH_LONG).show()
+            return
+        }
 
-        val tag: Tag? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val tag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
         } else {
             @Suppress("DEPRECATION")
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG) as Tag?
+            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
         }
 
         tag?.let {
-            // 这里可以处理原始 Tag 对象
+            binding.textView2.text = getString(R.string.scannedTag, tag.toString())
 
-            val scannedText = findViewById<TextView>(R.id.textView2)
-            scannedText.text = getString(R.string.scannedTag, tag.toString())
-            val scannedContext = findViewById<TextView>(R.id.textView3)
-
-            if (NfcAdapter.ACTION_NDEF_DISCOVERED == intent.action) {
-                intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
-                    ?.also { rawMessages ->
-                        val messages: List<NdefMessage> = rawMessages.map { it as NdefMessage }
-                        // 处理消息数组
-                        val stringBuilder = StringBuilder()
-
-                        // 修改后的 handleNfcIntent 记录处理逻辑
-                        messages.forEach { ndefMessage ->
-                            ndefMessage.records.forEach { record ->
-                                when (record.tnf) {
-                                    NdefRecord.TNF_WELL_KNOWN -> {
-                                        when {
-                                            record.type.contentEquals(NdefRecord.RTD_TEXT) -> {
-                                                val text = parseTextRecord(record)
-                                                stringBuilder.append(getString(R.string.text_type, text))
-                                            }
-                                            record.type.contentEquals(NdefRecord.RTD_URI) -> {
-                                                val uri = parseUriRecord(record)
-                                                stringBuilder.append(getString(R.string.uri_type, uri))
-                                            }
-                                        }
-                                    }
-                                    NdefRecord.TNF_MIME_MEDIA -> {
-                                        when (record.toMimeType()) {
-                                            "application/vnd.bluetooth.ep.oob" -> {
-                                                val bluetooth = processBluetoothRecord(record)
-                                                stringBuilder.append(getString(R.string.bluetooth_type, bluetooth))
-                                            }
-                                            "application/vnd.wfa.wsc" -> {
-                                                val wifi = parseWifiRecord(record)
-                                                stringBuilder.append(getString(R.string.wifi_type, wifi))
-                                            }
-                                        }
-                                    }
-                                    NdefRecord.TNF_EXTERNAL_TYPE -> {
-                                        when (String(record.type)) {
-                                            "android.com:pkg" -> {
-                                                val app = parseApplicationRecord(record)
-                                                stringBuilder.append(getString(R.string.app_type, app))
-                                            }
-                                        }
-                                    }
-                                    else -> {
-                                        stringBuilder.append(getString(R.string.unknown_type, record.toHexString()))
-                                    }
-                                }
-                            }
-                        }
-
-
-                        scannedContext.text = stringBuilder.toString()
-
-
+            when (intent.action) {
+                NfcAdapter.ACTION_NDEF_DISCOVERED -> {
+                    intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)?.let { rawMessages ->
+                        val messages = rawMessages.map { it as NdefMessage }
+                        binding.textView3.text = parseNdefMessages(messages)
                     }
-            } else if (NfcAdapter.ACTION_TECH_DISCOVERED == intent.action) {
-                scannedContext.text = getString(R.string.notSupport)
-            } else {
-                scannedContext.text = getString(R.string.notSupport)
-            }
-
-//            Log.d("NFC", "发现标签: ${it.id.toHexString()}")
-//            processRawTag(it)
-        }
-    }
-
-    class MifareUltralightTagTester {
-
-        fun writeTag(tag: Tag, tagText: String) {
-            MifareUltralight.get(tag)?.use { ultralight ->
-                ultralight.connect()
-                Charset.forName("US-ASCII").also { usAscii ->
-                    ultralight.writePage(4, "abcd".toByteArray(usAscii))
-                    ultralight.writePage(5, "efgh".toByteArray(usAscii))
-                    ultralight.writePage(6, "ijkl".toByteArray(usAscii))
-                    ultralight.writePage(7, "mnop".toByteArray(usAscii))
+                }
+                else -> {
+                    binding.textView3.text = getString(R.string.notSupport)
                 }
             }
         }
+    }
 
-        fun readTag(tag: Tag): String? {
-            return MifareUltralight.get(tag)?.use { mifare ->
-                mifare.connect()
-                val payload = mifare.readPages(4)
-                String(payload, Charset.forName("US-ASCII"))
+    private fun parseNdefMessages(messages: List<NdefMessage>): String {
+        val result = StringBuilder()
+
+        messages.forEach { message ->
+            message.records.forEach { record ->
+                result.append(when (record.tnf) {
+                    NdefRecord.TNF_WELL_KNOWN -> parseWellKnownRecord(record)
+                    NdefRecord.TNF_MIME_MEDIA -> parseMimeRecord(record)
+                    NdefRecord.TNF_EXTERNAL_TYPE -> parseExternalRecord(record)
+                    else -> "未知类型: ${record.toHexString()}\n"
+                })
             }
+        }
+
+        return result.toString().trim()
+    }
+
+    private fun parseWellKnownRecord(record: NdefRecord): String {
+        return when {
+            record.type.contentEquals(NdefRecord.RTD_TEXT) -> {
+                "文本: ${parseTextRecord(record)}\n"
+            }
+            record.type.contentEquals(NdefRecord.RTD_URI) -> {
+                "URI: ${parseUriRecord(record)}\n"
+            }
+            else -> "未知Well Known类型\n"
         }
     }
 
-    // 解析文本记录的扩展函数
+    private fun parseMimeRecord(record: NdefRecord): String {
+        return when (record.toMimeType()) {
+            "application/vnd.wfa.wsc" -> "WiFi配置:\n${parseWifiRecord(record)}"
+            "application/vnd.bluetooth.ep.oob" -> "蓝牙配置:\n${parseBluetoothRecord(record)}"
+            else -> "MIME类型: ${record.toMimeType()}\n内容: ${record.payload.toHexString()}\n"
+        }
+    }
+
+    private fun parseExternalRecord(record: NdefRecord): String {
+        return when (String(record.type)) {
+            "android.com:pkg" -> "应用: ${parseApplicationRecord(record)}\n"
+            else -> "外部类型: ${String(record.type)}\n"
+        }
+    }
+
     private fun parseTextRecord(record: NdefRecord): String {
-        val payload = record.payload
-        val textEncoding = if ((payload[0].toInt() and 0x80) == 0) "UTF-8" else "UTF-16"
-        val languageCodeLength = payload[0].toInt() and 0x3F
-        return String(
-            payload,
-            languageCodeLength + 1,
-            payload.size - languageCodeLength - 1,
-            Charset.forName(textEncoding)
-        )
-    }
-
-    // 解析 URI 记录的扩展函数
-    private fun parseUriRecord(record: NdefRecord): String {
-        val prefixMap = mapOf(
-            0x00.toByte() to "",
-            0x01.toByte() to "http://www.",
-            0x02.toByte() to "https://www.",
-            // ... 其他前缀映射
-        )
-        val prefix = prefixMap[record.payload[0]] ?: ""
-        return prefix + String(record.payload, 1, record.payload.size - 1, Charsets.UTF_8)
-    }
-
-    // 将未知记录转为十六进制字符串
-    private fun NdefRecord.toHexString(): String {
-        return this.payload.joinToString("") { "%02x".format(it) }
-    }
-
-    // 解析应用程序记录的扩展函数
-    private fun parseApplicationRecord(record: NdefRecord): String {
-        if (record.tnf == NdefRecord.TNF_EXTERNAL_TYPE
-            && record.type.contentEquals("android.com:pkg".toByteArray())) {
-            val packageName = String(record.payload, Charsets.UTF_8)
-            // 示例：直接启动对应应用
-            // val intent = packageManager.getLaunchIntentForPackage(packageName)
-            // startActivity(intent)
-            return packageName
-        }
-        else {
-            return ""
-        }
-    }
-
-    // 处理 Wi-Fi
-    private fun parseWifiRecord(record: NdefRecord): String {
-        val stringBuilder = StringBuilder()
-        if (record.toMimeType() == "application/vnd.wfa.wsc") {
+        return try {
             val payload = record.payload
-            // 按 WFA 规范解析二进制数据
-            val ssid = parseWscString(payload, 0x1045) // SSID 标签代码 0x1045
-            val password = parseWscString(payload, 0x1027) // 密码标签代码 0x1027
-            stringBuilder.append(getString(R.string.ssid, ssid))
-            stringBuilder.append(getString(R.string.wifi_password, password))
+            val textEncoding = if ((payload[0].toInt() and 0x80) == 0) "UTF-8" else "UTF-16"
+            val languageCodeLength = payload[0].toInt() and 0x3F
+            String(payload, languageCodeLength + 1, payload.size - languageCodeLength - 1,
+                Charset.forName(textEncoding))
+        } catch (e: Exception) {
+            Log.w(TAG, "解析文本记录失败", e)
+            "解析错误"
         }
-        return stringBuilder.toString()
     }
 
-    private fun parseWscString(payload: ByteArray, tagCode: Int): String? {
-        var index = 0
-        while (index < payload.size) {
-            val type = (payload[index].toInt() shl 8) or payload[index + 1].toInt()
-            val length = (payload[index + 2].toInt() shl 8) or payload[index + 3].toInt()
-            if (type == tagCode) {
-                return String(payload, index + 4, length, Charsets.UTF_8)
-            }
-            index += 4 + length
+    private fun parseUriRecord(record: NdefRecord): String {
+        val prefix = URI_PREFIX_MAP[record.payload[0]] ?: ""
+        return try {
+            prefix + String(record.payload, 1, record.payload.size - 1, Charsets.UTF_8)
+        } catch (e: Exception) {
+            Log.w(TAG, "解析URI记录失败", e)
+            "无效URI"
         }
-        return null
     }
 
-    // 处理蓝牙
-    private fun processBluetoothRecord(record: NdefRecord): String {
-        val stringBuilder = StringBuilder()
-        when {
-            // 检查蓝牙配对记录（常见格式）
-            record.toUri()?.scheme == "bluetooth" -> {
-                val btUri = record.toUri()
-                val macAddress = btUri?.host // 蓝牙 MAC 地址
-                val name = btUri?.path?.removePrefix("/") // 设备名称
-                // 示例URI：bluetooth://00:11:22:33:44:55/MyHeadset
-                stringBuilder.append(getString(R.string.bluetooth_mac, macAddress))
-                stringBuilder.append(getString(R.string.bluetooth_device_name, name))
-            }
+    private fun parseWifiRecord(record: NdefRecord): String {
+        return buildString {
+            var offset = 0
+            val bytes = record.payload
 
-            // 处理 Android Beam 蓝牙配对记录（旧格式）
-            record.toMimeType() == "application/vnd.bluetooth.ep.oob" -> {
-                val payload = record.payload
-                // 解析蓝牙OOB数据（需要按规范解析）
-                stringBuilder.append(payload)
+            while (offset < bytes.size - 4) {
+                val type = bytes.readUShort(offset)
+                val length = bytes.readUShort(offset + 2)
+
+                if (offset + 4 + length > bytes.size) break
+
+                when (type) {
+                    0x1045 -> append("SSID: ${bytes.readString(offset + 4, length)}\n")
+                    0x1027 -> append("密码: ${bytes.readString(offset + 4, length)}\n")
+                    0x1003 -> append("认证: ${parseWifiAuthType(bytes[offset + 4])}\n")
+                    0x100F -> append("加密: ${parseWifiEncType(bytes[offset + 4])}\n")
+                }
+
+                offset += 4 + length
             }
         }
-        return stringBuilder.toString()
     }
+
+    private fun parseBluetoothRecord(record: NdefRecord): String {
+        return when {
+            record.toUri()?.scheme?.startsWith("bt") == true -> {
+                val uri = record.toUri()!!
+                "MAC: ${uri.host}\n名称: ${uri.path?.substringAfter("/")}"
+            }
+            else -> {
+                val bytes = record.payload
+                if (bytes.size < 6) return "无效蓝牙数据"
+
+                "MAC: ${bytes.take(6).joinToString(":") { "%02X".format(it) }}\n" +
+                        if (bytes.size > 6) "名称: ${String(bytes, 6, bytes.size - 6, Charsets.UTF_8)}" else ""
+            }
+        }
+    }
+
+    private fun parseApplicationRecord(record: NdefRecord): String {
+        return try {
+            String(record.payload, Charsets.UTF_8)
+        } catch (e: Exception) {
+            Log.w(TAG, "解析应用记录失败", e)
+            "未知应用"
+        }
+    }
+
+    // 扩展函数
+    private fun ByteArray.readUShort(offset: Int): Int =
+        (this[offset].toInt() shl 8) or this[offset + 1].toInt()
+
+    private fun ByteArray.readString(offset: Int, length: Int): String =
+        String(this, offset, length, Charsets.UTF_8)
+
+    private fun parseWifiAuthType(value: Byte): String = when (value.toInt()) {
+        0x01 -> "开放网络"
+        0x02 -> "WPA-PSK"
+        0x04 -> "共享密钥"
+        0x08 -> "WPA-企业版"
+        0x10 -> "WPA2-企业版"
+        0x20 -> "WPA2-PSK"
+        else -> "未知($value)"
+    }
+
+    private fun parseWifiEncType(value: Byte): String = when (value.toInt()) {
+        0x01 -> "无"
+        0x02 -> "WEP"
+        0x04 -> "TKIP"
+        0x08 -> "AES"
+        0x0C -> "AES/TKIP"
+        else -> "未知($value)"
+    }
+
+    private fun NdefRecord.toHexString(): String =
+        this.payload.joinToString("") { "%02X".format(it) }
 }
