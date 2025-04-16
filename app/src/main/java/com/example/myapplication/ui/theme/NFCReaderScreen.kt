@@ -115,7 +115,9 @@ fun NFCReaderScreen(
                         text = tagContent.ifEmpty { stringResource(R.string.display_content) },
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .wrapContentSize(Alignment.Center)
                     )
                 }
             }

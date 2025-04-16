@@ -176,6 +176,7 @@ class MainActivity2 : AppCompatActivity() {
                     onWriteCardClick = {
                         startActivity(Intent(this@MainActivity2, WriteCard::class.java))
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        finish()
                     }
                 )
             }

@@ -29,6 +29,7 @@ import androidx.constraintlayout.compose.Dimension
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.io.IOException
 import androidx.compose.ui.text.font.FontWeight
+import com.example.myapplication.ui.theme.WriteCardScreen
 
 @OptIn(ExperimentalStdlibApi::class)
 class WriteCard : ComponentActivity() {
@@ -65,6 +66,7 @@ class WriteCard : ComponentActivity() {
                     onWriteUrl = { url ->
                         currentWriteMode = WriteMode.URL
                         inputText = if (url.startsWith("http")) url else "https://$url"
+
                         showToast("请将手机靠近NFC标签写入网址")
                     },
                     onBackToRead = ::navigateBackToRead,
@@ -182,146 +184,15 @@ class WriteCard : ComponentActivity() {
     }
 
     private fun navigateBackToRead() {
-        // startActivity(Intent(this, MainActivity2::class.java))
+        //startActivity(Intent(this, MainActivity2::class.java))
+        //finish()
+        startActivity(Intent(this@WriteCard, MainActivity2::class.java))
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         finish()
     }
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-}
-
-@Composable
-fun WriteCardScreen(
-    onWriteText: (String) -> Unit,
-    onWriteUrl: (String) -> Unit,
-    onBackToRead: () -> Unit,
-    currentMode: WriteCard.WriteMode,
-    inputText: String
-) {
-    var text by remember { mutableStateOf("") }
-    var showDialog by remember { mutableStateOf(false) }
-    var dialogMessage by remember { mutableStateOf("") }
-
-    ConstraintLayout(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        val (title, formatHint, input, buttonRow, backBtn) = createRefs()
-
-        // 标题
-        Text(
-            text = "写入NFC标签",
-            fontSize = 20.sp,
-            modifier = Modifier
-                .constrainAs(title) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-                .padding(24.dp)
-        )
-
-        // 输入框
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            label = { Text("输入网址或文本内容") },
-            modifier = Modifier
-                .constrainAs(input) {
-                    top.linkTo(title.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-                .padding(16.dp)
-                .fillMaxWidth(),
-            minLines = 3
-        )
-
-        // 按钮行
-        Row(
-            modifier = Modifier
-                .constrainAs(buttonRow) {
-                    top.linkTo(input.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 写入网址按钮
-            Button(
-                onClick = {
-                    if (text.isEmpty()) {
-                        dialogMessage = "请输入网址内容"
-                        showDialog = true
-                    } else {
-                        onWriteUrl(text)
-                    }
-                },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("写入网址")
-            }
-
-            // 写入文本按钮
-            Button(
-                onClick = {
-                    if (text.isEmpty()) {
-                        dialogMessage = "请输入文本内容"
-                        showDialog = true
-                    } else {
-                        onWriteText(text)
-                    }
-                },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("写入文本")
-            }
-        }
-
-        // 返回按钮
-        Button(
-            onClick = onBackToRead,
-            modifier = Modifier
-                .constrainAs(backBtn) {
-                    bottom.linkTo(parent.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text("返回读卡")
-        }
-
-        if (showDialog) {
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("提示") },
-                text = { Text(dialogMessage) },
-                confirmButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("确定")
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-fun PreviewWriteCardScreen() {
-    MyApplicationTheme {
-        WriteCardScreen(
-            onWriteText = {},
-            onWriteUrl = {},
-            onBackToRead = {},
-            currentMode = WriteCard.WriteMode.IDLE,
-            inputText = ""
-        )
     }
 }
 
