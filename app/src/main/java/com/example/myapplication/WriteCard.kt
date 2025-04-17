@@ -69,6 +69,10 @@ class WriteCard : ComponentActivity() {
 
                         showToast("请将手机靠近NFC标签写入网址")
                     },
+                    onWriteWifi = {
+                        startActivity(Intent(this@WriteCard, WriteWifi::class.java))
+                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                    },
                     onBackToRead = ::navigateBackToRead,
                     currentMode = currentWriteMode,
                     inputText = inputText

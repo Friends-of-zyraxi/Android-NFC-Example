@@ -40,7 +40,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-import com.example.myapplication.ui.NFCReaderScreen
+import com.example.myapplication.ui.theme.NFCReaderScreen
 
 
 class MainActivity2 : AppCompatActivity() {

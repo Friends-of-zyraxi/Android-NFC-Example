@@ -1,4 +1,4 @@
-package com.example.myapplication.ui
+package com.example.myapplication.ui.theme
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

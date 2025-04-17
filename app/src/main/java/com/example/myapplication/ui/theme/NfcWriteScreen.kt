@@ -23,6 +23,7 @@ import com.example.myapplication.util.checkNfcAvailability
 fun WriteCardScreen(
     onWriteText: (String) -> Unit,
     onWriteUrl: (String) -> Unit,
+    onWriteWifi: () -> Unit,
     onBackToRead: () -> Unit,
     currentMode: WriteCard.WriteMode,
     inputText: String
@@ -107,6 +108,16 @@ fun WriteCardScreen(
             ) {
                 Text("写入文本")
             }
+
+            // 写入 Wi-Fi 按钮
+            Button(
+                onClick = {
+                    onWriteWifi()
+                },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("写入 Wi-Fi")
+            }
         }
 
         // 返回按钮
@@ -146,6 +157,7 @@ fun PreviewWriteCardScreen() {
         WriteCardScreen(
             onWriteText = {},
             onWriteUrl = {},
+            onWriteWifi = {},
             onBackToRead = {},
             currentMode = WriteCard.WriteMode.IDLE,
             inputText = ""
