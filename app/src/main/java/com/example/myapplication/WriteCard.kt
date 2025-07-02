@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.io.IOException
 import com.example.myapplication.ui.theme.WriteCardScreen
+import com.example.myapplication.MainActivity
 
 @OptIn(ExperimentalStdlibApi::class)
 class WriteCard : ComponentActivity() {
@@ -45,26 +46,25 @@ class WriteCard : ComponentActivity() {
         // 设置Compose界面
         setContent {
             MyApplicationTheme {
-                WriteCardScreen(
-                    onWriteText = { text ->
-                        currentWriteMode = WriteMode.TEXT
-                        inputText = text
-                        showToast("请将手机靠近NFC标签写入文本")
-                    },
-                    onWriteUrl = { url ->
-                        currentWriteMode = WriteMode.URL
-                        inputText = if (url.startsWith("http")) url else "https://$url"
-
-                        showToast("请将手机靠近NFC标签写入网址")
-                    },
-                    onWriteWifi = {
-                        startActivity(Intent(this@WriteCard, WriteWiFi::class.java))
-                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                    },
-                    onBackToRead = ::navigateBackToRead,
-                    currentMode = currentWriteMode,
-                    inputText = inputText
-                )
+//                WriteCardScreen(
+//                    onWriteText = { text ->
+//                        currentWriteMode = WriteMode.TEXT
+//                        inputText = text
+//                        showToast("请将手机靠近NFC标签写入文本")
+//                    },
+//                    onWriteUrl = { url ->
+//                        currentWriteMode = WriteMode.URL
+//                        inputText = if (url.startsWith("http")) url else "https://$url"
+//
+//                        showToast("请将手机靠近NFC标签写入网址")
+//                    },
+//                    onWriteWifi = {
+//                        startActivity(Intent(this@WriteCard, WriteWiFi::class.java))
+//                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+//                    },
+//                    currentMode = currentWriteMode,
+//                    inputText = inputText
+//                )
             }
         }
 
@@ -173,14 +173,6 @@ class WriteCard : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         nfcAdapter.disableForegroundDispatch(this)
-    }
-
-    private fun navigateBackToRead() {
-        //startActivity(Intent(this, MainActivity2::class.java))
-        //finish()
-        startActivity(Intent(this@WriteCard, ReadCard::class.java))
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        finish()
     }
 
     private fun showToast(message: String) {

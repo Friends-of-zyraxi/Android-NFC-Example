@@ -1,31 +1,21 @@
 package com.example.myapplication.ui.theme
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
-import com.example.myapplication.R
-import com.example.myapplication.WriteCard
-import kotlinx.coroutines.launch
-import com.example.myapplication.util.checkNfcAvailability
+import com.example.myapplication.MainActivity
 
 @Composable
 fun WriteCardScreen(
     onWriteText: (String) -> Unit,
     onWriteUrl: (String) -> Unit,
     onWriteWifi: () -> Unit,
-    onBackToRead: () -> Unit,
-    currentMode: WriteCard.WriteMode,
+    currentMode: MainActivity.WriteMode,
     inputText: String
 ) {
     var text by remember { mutableStateOf("") }
@@ -120,20 +110,7 @@ fun WriteCardScreen(
             }
         }
 
-        // 返回按钮
-        Button(
-            onClick = onBackToRead,
-            modifier = Modifier
-                .constrainAs(backBtn) {
-                    bottom.linkTo(parent.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text("返回读卡")
-        }
+
 
         if (showDialog) {
             AlertDialog(
@@ -158,8 +135,7 @@ fun PreviewWriteCardScreen() {
             onWriteText = {},
             onWriteUrl = {},
             onWriteWifi = {},
-            onBackToRead = {},
-            currentMode = WriteCard.WriteMode.IDLE,
+            currentMode = MainActivity.WriteMode.IDLE,
             inputText = ""
         )
     }

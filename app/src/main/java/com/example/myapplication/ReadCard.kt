@@ -40,8 +40,8 @@ class ReadCard : AppCompatActivity() {
     private var isButtonVisible by mutableStateOf(true)
 
     companion object {
-        private const val TAG = "NFC_DEMO"
-        private val URI_PREFIX_MAP = mapOf(
+        const val TAG = "NFC_DEMO"
+        val URI_PREFIX_MAP = mapOf(
             0x00.toByte() to "",
             0x01.toByte() to "http://www.",
             0x02.toByte() to "https://www.",
@@ -158,11 +158,6 @@ class ReadCard : AppCompatActivity() {
                             }
                         )
                     },
-                    onWriteCardClick = {
-                        startActivity(Intent(this@ReadCard, WriteCard::class.java))
-                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                        finish()
-                    }
                 )
             }
         }

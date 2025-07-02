@@ -43,7 +43,7 @@
     <string name="input_hint">输入要写入的内容</string>
     <string name="write_button">写入标签</string>
     <string name="back_to_read">返回读卡</string>
-    <string name="nfc_reader_title">基于 NFC 的多模式通信实践开发</string>
+    <string name="nfc_reader_title">基于 NFC 的多模式通信实践</string>
     <string name="scan_a_tag">请扫描NFC标签</string>
     <string name="goto_write_card2">写入标签</string>
     <string name="format_hint_url">网址格式: http://或https://开头</string>

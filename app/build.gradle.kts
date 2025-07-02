@@ -85,4 +85,5 @@ dependencies {
     // 添加这两行调试依赖 ↓
     debugImplementation(libs.androidx.ui.tooling)      // 必须添加
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.0") // 如果仍有问题添加这行
+    implementation("androidx.navigation:navigation-compose:2.7.7")//导航
 }

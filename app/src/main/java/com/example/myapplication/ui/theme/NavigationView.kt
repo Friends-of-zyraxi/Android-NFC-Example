@@ -1,5 +1,8 @@
 package com.example.myapplication.ui.theme
 import com.example.myapplication.ui.theme.NFCReaderScreen
+import com.example.myapplication.ui.theme.WriteCardScreen
+import com.example.myapplication.ReadCard
+import com.example.myapplication.WriteCard
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -34,22 +37,25 @@ enum class NavigationItem(
     val title: String,
     val icon: ImageVector
 ) {
-    HOME("读卡", Icons.Default.Email),
-    PROFILE("写卡", Icons.Default.Edit),
-    SETTINGS("端对端", Icons.Default.Call)
+    READ("读卡", Icons.Default.Email),
+    WRITE("写卡", Icons.Default.Edit),
+    P2P("端对端", Icons.Default.Call)
 }
 
 // 2. 主界面组件 - 使用索引保存状态
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomNavigationApp() {
+fun BottomNavigationApp(
+    readerScreen: @Composable () -> Unit,
+    writeScreen: @Composable () -> Unit
+) {
     // 使用整数索引保存状态（系统支持的基本类型）
     var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
 
     val navigationItems = listOf(
-        NavigationItem.HOME,
-        NavigationItem.PROFILE,
-        NavigationItem.SETTINGS
+        NavigationItem.READ,
+        NavigationItem.WRITE,
+        NavigationItem.P2P
     )
 
     Scaffold(
@@ -78,9 +84,9 @@ fun BottomNavigationApp() {
             contentAlignment = Alignment.Center
         ) {
             when (navigationItems[selectedItemIndex]) {
-                NavigationItem.HOME -> HomeScreen()
-                NavigationItem.PROFILE -> ProfileScreen()
-                NavigationItem.SETTINGS -> SettingsScreen()
+                NavigationItem.READ -> readerScreen()
+                NavigationItem.WRITE -> writeScreen()
+                NavigationItem.P2P -> P2pScreen()
             }
         }
     }
@@ -88,17 +94,18 @@ fun BottomNavigationApp() {
 
 // 3. 视图组件保持不变
 @Composable
-fun HomeScreen() {
+fun ReadScreen() {
     Text("读卡界面", style = MaterialTheme.typography.headlineMedium)
+    //
 }
 
 @Composable
-fun ProfileScreen() {
+fun WriteScreen() {
     Text("写卡界面", style = MaterialTheme.typography.headlineMedium)
 }
 
 @Composable
-fun SettingsScreen() {
+fun P2pScreen() {
     Text("端对端通信界面", style = MaterialTheme.typography.headlineMedium)
 }
 
@@ -106,7 +113,10 @@ fun SettingsScreen() {
 @Composable
 fun PreviewBottomNavigationApp() {
     MaterialTheme {
-        BottomNavigationApp()
+        BottomNavigationApp(
+            readerScreen={},
+            writeScreen={}
+        )
     }
 }
 class NavigationView {

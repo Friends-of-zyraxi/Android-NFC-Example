@@ -24,7 +24,6 @@ fun NFCReaderScreen(
     isButtonVisible: Boolean,
     snackbarHostState: SnackbarHostState,
     onCheckNfcClick: () -> Unit,
-    onWriteCardClick: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -122,15 +121,7 @@ fun NFCReaderScreen(
                 }
             }
 
-            Button(
-                onClick = onWriteCardClick,
-                modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .padding(bottom = 16.dp)
-                    .align(Alignment.CenterHorizontally)
-            ) {
-                Text(text = stringResource(R.string.goto_write_card))
-            }
+
         }
     }
 }
@@ -144,6 +135,5 @@ fun NFCReaderScreenPreview() {
         isButtonVisible = true,
         snackbarHostState = remember { SnackbarHostState() },
         onCheckNfcClick = {},
-        onWriteCardClick = {}
     )
 }
