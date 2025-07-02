@@ -14,7 +14,9 @@ class WriteWiFi  : ComponentActivity(){
         setContent {
             MyApplicationTheme {
                 WifiWriteScreen(
-                    onWriteCardClick = {}
+                    onWriteCardClick = {
+                        finish()
+                    }
                 )
             }
         }

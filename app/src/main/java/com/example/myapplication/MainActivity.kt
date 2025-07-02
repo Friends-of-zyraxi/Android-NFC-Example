@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 package com.example.myapplication
 import com.example.myapplication.ui.theme.NavigationView
+import com.example.myapplication.ui.theme.WifiWriteScreen
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentFilter
@@ -49,6 +50,8 @@ import com.example.myapplication.ui.theme.WriteCardScreen
 import android.nfc.tech.*
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.io.IOException
 
@@ -164,6 +167,8 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val coroutineScope = rememberCoroutineScope()
                 val snackbarHostState = remember { SnackbarHostState() }
+                // 创建 NavController
+                val navController = rememberNavController()
                 BottomNavigationApp(
                     readerScreen = {
                         NFCReaderScreen(
@@ -204,15 +209,14 @@ class MainActivity : ComponentActivity() {
                             },
                             onWriteWifi = {
                                 startActivity(Intent(this@MainActivity, WriteWiFi::class.java))
-                                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                             },
                             currentMode = currentWriteMode,
                             inputText = inputText
                         )
+                    },
+                    p2pScreen = {
                     }
                 )
-                // 创建 NavController
-                val navController = rememberNavController()
             }
         }
     }

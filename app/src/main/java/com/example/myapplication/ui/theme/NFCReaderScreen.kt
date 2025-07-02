@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 import kotlinx.coroutines.launch
 import com.example.myapplication.util.checkNfcAvailability
@@ -56,14 +57,15 @@ fun NFCReaderScreen(
                 .padding(16.dp)
         ) {
             Text(
-                text = stringResource(R.string.nfc_reader_title),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
+                text = "读取 NFC 标签",
+                fontSize = 20.sp,
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .padding(top = 24.dp)
+                    .fillMaxWidth(0.8f)
                     .align(Alignment.CenterHorizontally)
+                    .wrapContentSize(Alignment.Center)
+                    .padding(24.dp)
             )
+
 
             if (isButtonVisible) {
                 Button(
@@ -105,20 +107,15 @@ fun NFCReaderScreen(
                     .align(Alignment.CenterHorizontally),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
-                Column(
+                Text(
+                    text = tagContent.ifEmpty { stringResource(R.string.display_content) },
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .padding(8.dp)
-                ) {
-                    Text(
-                        text = tagContent.ifEmpty { stringResource(R.string.display_content) },
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .wrapContentSize(Alignment.Center)
-                    )
-                }
+                        .padding(12.dp)
+                        .wrapContentSize(Alignment.Center)
+                        .align(alignment = Alignment.CenterHorizontally)
+                )
             }
 
 

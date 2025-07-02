@@ -1,4 +1,5 @@
 package com.example.myapplication.ui.theme
+import androidx.compose.foundation.background
 import com.example.myapplication.ui.theme.NFCReaderScreen
 import com.example.myapplication.ui.theme.WriteCardScreen
 import com.example.myapplication.ReadCard
@@ -6,6 +7,7 @@ import com.example.myapplication.WriteCard
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
@@ -28,9 +30,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 
 // 1. 使用枚举定义导航项
 enum class NavigationItem(
@@ -47,7 +52,8 @@ enum class NavigationItem(
 @Composable
 fun BottomNavigationApp(
     readerScreen: @Composable () -> Unit,
-    writeScreen: @Composable () -> Unit
+    writeScreen: @Composable () -> Unit,
+    p2pScreen: @Composable () -> Unit
 ) {
     // 使用整数索引保存状态（系统支持的基本类型）
     var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -61,7 +67,13 @@ fun BottomNavigationApp(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(navigationItems[selectedItemIndex].title) }
+                title = {
+                    Text(
+                        text = stringResource(R.string.nfc_reader_title),
+                        modifier = Modifier
+                            .wrapContentSize(Alignment.Center)
+                    )
+                }
             )
         },
         bottomBar = {
@@ -115,7 +127,8 @@ fun PreviewBottomNavigationApp() {
     MaterialTheme {
         BottomNavigationApp(
             readerScreen={},
-            writeScreen={}
+            writeScreen={},
+            p2pScreen = {}
         )
     }
 }

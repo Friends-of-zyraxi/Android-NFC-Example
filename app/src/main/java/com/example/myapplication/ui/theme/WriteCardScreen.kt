@@ -3,6 +3,7 @@ package com.example.myapplication.ui.theme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -27,11 +28,11 @@ fun WriteCardScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        val (title, formatHint, input, buttonRow, backBtn) = createRefs()
+        val (title, formatHint, input, buttonRow, backBtn, writeURI, writeText, writeWiFi) = createRefs()
 
         // 标题
         Text(
-            text = "写入NFC标签",
+            text = "写入 NFC 标签",
             fontSize = 20.sp,
             modifier = Modifier
                 .constrainAs(title) {
@@ -57,57 +58,64 @@ fun WriteCardScreen(
                 .fillMaxWidth(),
             minLines = 3
         )
-
-        // 按钮行
-        Row(
+        // 写入网址按钮
+        Button(
+            onClick = {
+                if (text.isEmpty()) {
+                    dialogMessage = "请输入网址内容"
+                    showDialog = true
+                } else {
+                    onWriteUrl(text)
+                }
+            },
             modifier = Modifier
-                .constrainAs(buttonRow) {
+                .constrainAs(writeURI) {
                     top.linkTo(input.bottom)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 写入网址按钮
-            Button(
-                onClick = {
-                    if (text.isEmpty()) {
-                        dialogMessage = "请输入网址内容"
-                        showDialog = true
-                    } else {
-                        onWriteUrl(text)
-                    }
-                },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("写入网址")
-            }
+            Text(
+                text = "写入网址",
+                modifier = Modifier
+                    .wrapContentSize(Alignment.Center)
+                    .align(alignment = Alignment.CenterVertically)
+            )
+        }
 
-            // 写入文本按钮
-            Button(
-                onClick = {
-                    if (text.isEmpty()) {
-                        dialogMessage = "请输入文本内容"
-                        showDialog = true
-                    } else {
-                        onWriteText(text)
-                    }
-                },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("写入文本")
-            }
+        // 写入文本按钮
+        Button(
+            onClick = {
+                if (text.isEmpty()) {
+                    dialogMessage = "请输入文本内容"
+                    showDialog = true
+                } else {
+                    onWriteText(text)
+                }
+            },
+            modifier = Modifier
+                .constrainAs(writeText) {
+                    top.linkTo(writeURI.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }
+        ) {
+            Text("写入文本")
+        }
 
-            // 写入 Wi-Fi 按钮
-            Button(
-                onClick = {
-                    onWriteWifi()
-                },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("写入 Wi-Fi")
-            }
+        // 写入 Wi-Fi 按钮
+        Button(
+            onClick = {
+                onWriteWifi()
+            },
+            modifier = Modifier
+                .constrainAs(writeWiFi) {
+                    top.linkTo(writeText.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }
+        ) {
+            Text("写入 Wi-Fi")
         }
 
 
@@ -127,7 +135,7 @@ fun WriteCardScreen(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun PreviewWriteCardScreen() {
     MyApplicationTheme {
