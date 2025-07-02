@@ -21,16 +21,20 @@
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
 
+        <activity android:name=".MainActivity"
+            android:exported="true">
+
+        </activity>
+
         <activity
-            android:name=".MainActivity2"
+            android:name=".ReadCard"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <!-- ACTION_NDEF_DISCOVERED 文本过滤器 -->
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
@@ -73,7 +77,7 @@
             android:theme="@style/Theme.MyApplication" /> <!-- 使用Compose主题 -->
 
         <activity
-            android:name=".WriteWifi"
+            android:name=".WriteWiFi"
             android:exported="false"
             android:theme="@style/Theme.MyApplication" /> <!-- 使用Compose主题 -->
     </application>

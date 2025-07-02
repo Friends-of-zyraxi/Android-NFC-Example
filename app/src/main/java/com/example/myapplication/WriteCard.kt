@@ -10,25 +10,13 @@ import android.nfc.Tag
 import android.nfc.tech.*
 import android.os.Bundle
 import android.os.Build
-import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.ConstraintSet
-import androidx.constraintlayout.compose.Dimension
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.io.IOException
-import androidx.compose.ui.text.font.FontWeight
 import com.example.myapplication.ui.theme.WriteCardScreen
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -70,7 +58,7 @@ class WriteCard : ComponentActivity() {
                         showToast("请将手机靠近NFC标签写入网址")
                     },
                     onWriteWifi = {
-                        startActivity(Intent(this@WriteCard, WriteWifi::class.java))
+                        startActivity(Intent(this@WriteCard, WriteWiFi::class.java))
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                     },
                     onBackToRead = ::navigateBackToRead,
@@ -190,7 +178,7 @@ class WriteCard : ComponentActivity() {
     private fun navigateBackToRead() {
         //startActivity(Intent(this, MainActivity2::class.java))
         //finish()
-        startActivity(Intent(this@WriteCard, MainActivity2::class.java))
+        startActivity(Intent(this@WriteCard, ReadCard::class.java))
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         finish()
     }

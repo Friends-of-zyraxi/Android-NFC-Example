@@ -10,32 +10,17 @@ import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.*
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import com.google.android.material.snackbar.Snackbar
 import java.nio.charset.Charset
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import com.example.myapplication.ui.theme.MyApplicationTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,7 +28,7 @@ import kotlinx.coroutines.launch
 import com.example.myapplication.ui.theme.NFCReaderScreen
 
 
-class MainActivity2 : AppCompatActivity() {
+class ReadCard : AppCompatActivity() {
     private var nfcAdapter: NfcAdapter? = null
     private lateinit var pendingIntent: PendingIntent
     private lateinit var intentFiltersArray: Array<IntentFilter>
@@ -150,13 +135,13 @@ class MainActivity2 : AppCompatActivity() {
             MyApplicationTheme {
                 val context = LocalContext.current
                 val coroutineScope = rememberCoroutineScope()
-                val snackbarHostState = remember { SnackbarHostState() } // ✅ 正确创建
+                val snackbarHostState = remember { SnackbarHostState() }
 
                 NFCReaderScreen(
                     tagInfo = tagInfo,
                     tagContent = tagContent,
                     isButtonVisible = isButtonVisible,
-                    snackbarHostState = snackbarHostState, // ✅ 传给 NFCReaderScreen
+                    snackbarHostState = snackbarHostState,
                     onCheckNfcClick = {
                         checkNfcAvailability(
                             isFirstCheck = false,
@@ -174,7 +159,7 @@ class MainActivity2 : AppCompatActivity() {
                         )
                     },
                     onWriteCardClick = {
-                        startActivity(Intent(this@MainActivity2, WriteCard::class.java))
+                        startActivity(Intent(this@ReadCard, WriteCard::class.java))
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                         finish()
                     }
