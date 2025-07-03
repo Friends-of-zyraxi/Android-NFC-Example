@@ -2,6 +2,7 @@ package com.example.myapplication.ui.theme
 import androidx.compose.foundation.background
 import com.example.myapplication.ui.theme.NFCReaderScreen
 import com.example.myapplication.ui.theme.WriteCardScreen
+import com.example.myapplication.ui.theme.P2PScreen
 import com.example.myapplication.ReadCard
 import com.example.myapplication.WriteCard
 import androidx.compose.foundation.layout.Box
@@ -98,27 +99,10 @@ fun BottomNavigationApp(
             when (navigationItems[selectedItemIndex]) {
                 NavigationItem.READ -> readerScreen()
                 NavigationItem.WRITE -> writeScreen()
-                NavigationItem.P2P -> P2pScreen()
+                NavigationItem.P2P -> p2pScreen()
             }
         }
     }
-}
-
-// 3. 视图组件保持不变
-@Composable
-fun ReadScreen() {
-    Text("读卡界面", style = MaterialTheme.typography.headlineMedium)
-    //
-}
-
-@Composable
-fun WriteScreen() {
-    Text("写卡界面", style = MaterialTheme.typography.headlineMedium)
-}
-
-@Composable
-fun P2pScreen() {
-    Text("端对端通信界面", style = MaterialTheme.typography.headlineMedium)
 }
 
 @Preview(showBackground = true)

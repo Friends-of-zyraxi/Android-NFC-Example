@@ -53,6 +53,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.theme.P2PScreen
 import java.io.IOException
 
 class MainActivity : ComponentActivity() {
@@ -191,7 +192,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 )
-                            },
+                            }
                         )
                     },
                     writeScreen = {
@@ -215,6 +216,28 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     p2pScreen = {
+                        P2PScreen(
+                            tagInfo = tagInfo,
+                            tagContent = tagContent,
+                            isButtonVisible = isButtonVisible,
+                            snackbarHostState = snackbarHostState,
+                            onCheckNfcClick = {
+                                checkNfcAvailability(
+                                    isFirstCheck = false,
+                                    showMessage = { messageRes, actionRes, action ->
+                                        coroutineScope.launch {
+                                            val result = snackbarHostState.showSnackbar(
+                                                message = context.getString(messageRes),
+                                                actionLabel = if (actionRes != 0) context.getString(actionRes) else null
+                                            )
+                                            if (result == SnackbarResult.ActionPerformed) {
+                                                action?.invoke()
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        )
                     }
                 )
             }

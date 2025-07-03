@@ -1,10 +1,30 @@
 <resources>
-    <string name="title_home">读取</string>
-    <string name="title_dashboard">写入</string>
-    <string name="title_notifications">设置</string>
+    <!--NavigationView-->
+    <string name="title_home">读卡</string>
+    <string name="title_dashboard">写卡</string>
+    <string name="title_notifications">端对端</string>
     <string name="app_name">NFC 通信</string>
     <string name="textview">基于 NFC 的多模式通信实践开发</string>
-    <string name="button1">检测本机 NFC 状态</string>
+    <!--NFCReaderScreen-->
+    <string name="supported_formats">支持的格式：文本、URI、Wi-Fi、蓝牙</string>
+    <string name="check_nfc_status">检查 NFC 状态</string>
+    <string name="scan_a_tag">请扫描 NFC 标签</string>
+    <string name="display_content">标签内容将在此显示</string>
+    <string name="nfc_not_supported">当前设备不支持 NFC</string>
+    <string name="nfc_not_enabled">NFC 未开启，请前往设置开启</string>
+    <string name="open_settings">去设置</string>
+    <string name="nfc_ready">NFC 功能已准备就绪</string>
+
+    <!--WriteCardScreen-->
+    <string name="write_title">写入 NFC 标签</string>
+    <string name="input_hint">输入网址或文本内容</string>
+    <string name="write_uri">写入网址</string>
+    <string name="write_text">写入文本</string>
+    <string name="write_wifi">写入 Wi-Fi</string>
+    <string name="please_input_uri">请输入网址内容</string>
+    <string name="please_input_text">请输入文本内容</string>
+    <string name="please_input_wifi">请输入 Wi-Fi 内容</string>
+
     <string name="switch1">切换开关</string>
     <string name="snackbar1">按钮已点击</string>
     <string name="NFCNA">该设备不支持 NFC 功能</string>
@@ -38,13 +58,12 @@
     <string name="no_content">尚未扫描到内容</string>
     <string name="scan_button">扫描NFC标签</string>
     <string name="write_mode">切换到写入模式</string>
-    <string name="textview2">写入NFC标签</string>
-    <string name="write_title">写入NFC标签</string>
-    <string name="input_hint">输入要写入的内容</string>
+
+
     <string name="write_button">写入标签</string>
     <string name="back_to_read">返回读卡</string>
     <string name="nfc_reader_title">基于 NFC 的多模式通信实践</string>
-    <string name="scan_a_tag">请扫描NFC标签</string>
+
     <string name="goto_write_card2">写入标签</string>
     <string name="format_hint_url">网址格式: http://或https://开头</string>
     <string name="format_hint_text">文本格式: 直接输入文字内容</string>
@@ -52,13 +71,9 @@
     <string name="format_url">• 网址(自动识别http/https)</string>
     <string name="format_text">• 普通文本</string>
     <string name="back_button">返回读取界面</string>
-    <string name="check_nfc_status">检查NFC状态</string>
-    <string name="supported_formats">支持的格式：文本、URI、WiFi、蓝牙</string>
-    <string name="display_content">标签内容将在此显示</string>
-    <string name="nfc_not_supported">当前设备不支持 NFC</string>
-    <string name="nfc_not_enabled">NFC 未开启，请前往设置开启</string>
-    <string name="open_settings">去设置</string>
-    <string name="nfc_ready">NFC 功能已准备就绪</string>
+
+
+
 
 
 </resources>

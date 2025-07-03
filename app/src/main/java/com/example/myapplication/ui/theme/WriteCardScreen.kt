@@ -5,11 +5,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.example.myapplication.MainActivity
+import com.example.myapplication.R
 
 @Composable
 fun WriteCardScreen(
@@ -32,7 +34,7 @@ fun WriteCardScreen(
 
         // 标题
         Text(
-            text = "写入 NFC 标签",
+            text = stringResource(R.string.write_title),
             fontSize = 20.sp,
             modifier = Modifier
                 .constrainAs(title) {
@@ -47,7 +49,7 @@ fun WriteCardScreen(
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
-            label = { Text("输入网址或文本内容") },
+            label = { Text(stringResource(R.string.input_hint)) },
             modifier = Modifier
                 .constrainAs(input) {
                     top.linkTo(title.bottom)
@@ -76,7 +78,7 @@ fun WriteCardScreen(
                 }
         ) {
             Text(
-                text = "写入网址",
+                text = stringResource(R.string.write_uri),
                 modifier = Modifier
                     .wrapContentSize(Alignment.Center)
                     .align(alignment = Alignment.CenterVertically)
@@ -100,7 +102,7 @@ fun WriteCardScreen(
                     end.linkTo(parent.end)
                 }
         ) {
-            Text("写入文本")
+            Text(stringResource(R.string.write_text))
         }
 
         // 写入 Wi-Fi 按钮
@@ -115,7 +117,7 @@ fun WriteCardScreen(
                     end.linkTo(parent.end)
                 }
         ) {
-            Text("写入 Wi-Fi")
+            Text(stringResource(R.string.write_wifi))
         }
 
 
