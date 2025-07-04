@@ -217,26 +217,14 @@ class MainActivity : ComponentActivity() {
                     },
                     p2pScreen = {
                         P2PScreen(
-                            tagInfo = tagInfo,
-                            tagContent = tagContent,
-                            isButtonVisible = isButtonVisible,
-                            snackbarHostState = snackbarHostState,
-                            onCheckNfcClick = {
-                                checkNfcAvailability(
-                                    isFirstCheck = false,
-                                    showMessage = { messageRes, actionRes, action ->
-                                        coroutineScope.launch {
-                                            val result = snackbarHostState.showSnackbar(
-                                                message = context.getString(messageRes),
-                                                actionLabel = if (actionRes != 0) context.getString(actionRes) else null
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                action?.invoke()
-                                            }
-                                        }
-                                    }
-                                )
-                            }
+                            isNfcEnabled = true,
+                            isBeamActive = true,
+                            receivedMessage = "收到的信息",
+                            messageToSend = "准备发送的信息",
+                            onMessageChange = {},
+                            onEnableBeam = {},
+                            onDisableBeam = {},
+                            onEnableNfc = {}
                         )
                     }
                 )

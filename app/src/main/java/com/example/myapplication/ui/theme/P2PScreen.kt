@@ -20,105 +20,130 @@ import com.example.myapplication.util.checkNfcAvailability
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun P2PScreen(
-    tagInfo: String,
-    tagContent: String,
-    isButtonVisible: Boolean,
-    snackbarHostState: SnackbarHostState,
-    onCheckNfcClick: () -> Unit,
+    isNfcEnabled: Boolean,
+    isBeamActive: Boolean,
+    receivedMessage: String,
+    messageToSend: String,
+    onMessageChange: (String) -> Unit,
+    onEnableBeam: () -> Unit,
+    onDisableBeam: () -> Unit,
+    onEnableNfc: () -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "NFC P2P通信",
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
 
-    // 自动检查 NFC 可用性
-    LaunchedEffect(Unit) {
-        checkNfcAvailability(
-            isFirstCheck = true,
-            showMessage = { messageRes, actionRes, action ->
-                coroutineScope.launch {
-                    val result = snackbarHostState.showSnackbar(
-                        message = context.getString(messageRes),
-                        actionLabel = if (actionRes != 0) context.getString(actionRes) else null
+        if (!isNfcEnabled) {
+            Text(
+                text = "NFC功能未启用",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            Button(onClick = onEnableNfc) {
+                Text("启用NFC")
+            }
+        } else {
+            // 接收消息区域
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "接收到的消息",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        action?.invoke()
+                    Text(
+                        text = receivedMessage.ifEmpty { "等待接收消息..." },
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    )
+                }
+            }
+
+            // 发送消息区域
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "发送消息",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = messageToSend,
+                        onValueChange = onMessageChange,
+                        label = { Text("输入要发送的消息") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = onEnableBeam,
+                            enabled = messageToSend.isNotEmpty() && !isBeamActive
+                        ) {
+                            Text("激活发送")
+                        }
+
+                        Button(
+                            onClick = onDisableBeam,
+                            enabled = isBeamActive,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Text("停止发送")
+                        }
                     }
                 }
             }
-        )
-    }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-        ) {
+            // 使用说明
             Text(
-                text = "P2P 通信",
-                fontSize = 20.sp,
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .align(Alignment.CenterHorizontally)
-                    .wrapContentSize(Alignment.Center)
-                    .padding(24.dp)
-            )
-
-
-            if (isButtonVisible) {
-                Button(
-                    onClick = onCheckNfcClick,
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .padding(top = 16.dp)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Text(text = stringResource(R.string.check_nfc_status))
-                }
-            }
-
-            Text(
-                text = stringResource(R.string.supported_formats),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-
-            Text(
-                text = tagInfo.ifEmpty { stringResource(R.string.scan_a_tag) },
+                text = "使用说明：\n" +
+                        "1. 输入消息并点击'激活发送'\n" +
+                        "2. 将设备背靠背靠近另一台设备\n" +
+                        "3. 触摸屏幕发送消息",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .padding(top = 16.dp)
-                    .align(Alignment.CenterHorizontally)
+                modifier = Modifier.padding(top = 16.dp)
             )
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .weight(1f)
-                    .padding(vertical = 16.dp)
-                    .align(Alignment.CenterHorizontally),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
+            if (isBeamActive) {
                 Text(
-                    text = tagContent.ifEmpty { stringResource(R.string.display_content) },
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .wrapContentSize(Alignment.Center)
-                        .align(alignment = Alignment.CenterHorizontally)
+                    text = "发送模式已激活 - 准备发送消息",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 16.dp)
                 )
             }
-
-
         }
     }
 }
@@ -127,10 +152,13 @@ fun P2PScreen(
 @Composable
 fun P2PScreenPreview() {
     P2PScreen(
-        tagInfo = "已扫描标签: Tag[ID:1234]",
-        tagContent = "文本: Hello, NFC!\nURI: https://example.com",
-        isButtonVisible = true,
-        snackbarHostState = remember { SnackbarHostState() },
-        onCheckNfcClick = {},
+        isNfcEnabled = true,
+        isBeamActive = true,
+        receivedMessage = "收到的信息",
+        messageToSend = "准备发送的信息",
+        onMessageChange = {},
+        onEnableBeam = {},
+        onDisableBeam = {},
+        onEnableNfc = {}
     )
 }
