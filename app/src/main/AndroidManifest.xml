@@ -24,10 +24,12 @@
         <activity android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
 
             <!-- ACTION_NDEF_DISCOVERED 文本过滤器 -->
             <intent-filter>
@@ -62,6 +64,15 @@
             <!-- ACTION_TAG_DISCOVERED -->
             <intent-filter>
                 <action android:name="android.nfc.action.TAG_DISCOVERED" />
+            </intent-filter>
+
+            <!-- ACTION_NDEF_DISCOVERED 文本过滤器 -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/com.example.myapplication" />
             </intent-filter>
         </activity>
 
@@ -116,6 +127,14 @@
             android:name=".WriteWiFi"
             android:exported="false"
             android:theme="@style/Theme.MyApplication" /> <!-- 使用Compose主题 -->
+
+        <activity
+            android:name=".P2PCommunication"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication">
+
+
+        </activity>
     </application>
 
 

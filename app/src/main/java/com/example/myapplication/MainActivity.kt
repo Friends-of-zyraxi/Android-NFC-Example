@@ -55,6 +55,15 @@ import androidx.navigation.compose.NavHost
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.ui.theme.P2PScreen
 import java.io.IOException
+import android.app.Activity
+import android.nfc.NfcEvent
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
     private var nfcAdapter: NfcAdapter? = null
@@ -578,4 +587,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    //P2P 通信页面
 }

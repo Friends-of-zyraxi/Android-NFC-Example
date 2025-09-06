@@ -6,6 +6,7 @@ import com.example.myapplication.ui.theme.P2PScreen
 import com.example.myapplication.ReadCard
 import com.example.myapplication.WriteCard
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
@@ -67,15 +68,25 @@ fun BottomNavigationApp(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.nfc_reader_title),
-                        modifier = Modifier
-                            .wrapContentSize(Alignment.Center)
-                    )
-                }
-            )
+            Column {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.nfc_reader_title),
+                            modifier = Modifier
+                                .wrapContentSize(Alignment.Center)
+                                .align(Alignment.CenterHorizontally)
+                        )
+                    }
+                )
+                Text(
+                    text = "版本: 20250906",
+                    style = MaterialTheme.typography.bodySmall, // 使用较小的文本样式
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally) // 使文本在 TopAppBar 下方居中
+                        .padding(bottom = 4.dp) // 添加一些底部间距
+                )
+            }
         },
         bottomBar = {
             NavigationBar {
