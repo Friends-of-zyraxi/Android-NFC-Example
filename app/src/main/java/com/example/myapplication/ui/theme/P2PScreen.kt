@@ -1,32 +1,35 @@
 package com.example.myapplication.ui.theme
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.myapplication.R
-import kotlinx.coroutines.launch
-import com.example.myapplication.util.checkNfcAvailability
+
+// 定义一个枚举类来表示连接状态，让 UI 更好地响应不同阶段
+enum class ConnectionState {
+    DISCONNECTED,       // 初始状态，无连接
+    ADVERTISING,        // 设备正在广告其 Nearby Endpoint ID (卡模拟模式)
+    DISCOVERING,        // 设备正在发现其他设备 (读取器模式)
+    CONNECTING,         // 接收到NFC数据，正在通过Nearby发起连接
+    CONNECTED           // 已通过 Nearby Connections 建立连接
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun P2PScreen(
     isNfcEnabled: Boolean,
-    isBeamActive: Boolean,
-    receivedMessage: String,
+    connectionState: ConnectionState,
+    receivedNearbyMessage: String,
     messageToSend: String,
     onMessageChange: (String) -> Unit,
-    onEnableBeam: () -> Unit,
-    onDisableBeam: () -> Unit,
+    onStartAdvertising: () -> Unit,
+    onStopAdvertising: () -> Unit,
+    onStartDiscovery: () -> Unit,
+    onSendMessage: (String) -> Unit,
     onEnableNfc: () -> Unit
 ) {
     Column(
@@ -35,12 +38,14 @@ fun P2PScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // 标题
         Text(
-            text = "NFC P2P通信",
+            text = "NFC + Nearby Connections",
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
+        // NFC 状态检查
         if (!isNfcEnabled) {
             Text(
                 text = "NFC功能未启用",
@@ -51,114 +56,124 @@ fun P2PScreen(
                 Text("启用NFC")
             }
         } else {
-            // 接收消息区域
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                elevation = CardDefaults.cardElevation(8.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+            // 根据连接状态展示不同的 UI
+            when (connectionState) {
+                ConnectionState.DISCONNECTED -> {
+                    // 初始状态：让用户选择作为广告者还是发现者
                     Text(
-                        text = "接收到的消息",
+                        text = "选择连接模式",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    Text(
-                        text = receivedMessage.ifEmpty { "等待接收消息..." },
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                    )
-                }
-            }
-
-            // 发送消息区域
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                elevation = CardDefaults.cardElevation(8.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "发送消息",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    OutlinedTextField(
-                        value = messageToSend,
-                        onValueChange = onMessageChange,
-                        label = { Text("输入要发送的消息") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp)
-                    )
-
                     Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Button(
-                            onClick = onEnableBeam,
-                            enabled = messageToSend.isNotEmpty() && !isBeamActive
-                        ) {
-                            Text("激活发送")
+                        Button(onClick = onStartDiscovery) {
+                            Text("作为读取器 (发现者)")
                         }
-
-                        Button(
-                            onClick = onDisableBeam,
-                            enabled = isBeamActive,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        ) {
-                            Text("停止发送")
+                        Button(onClick = onStartAdvertising) {
+                            Text("作为卡片 (广告者)")
                         }
                     }
                 }
-            }
+                ConnectionState.ADVERTISING -> {
+                    // 广告中：显示等待连接的提示
+                    Text(
+                        text = "作为卡片，正在等待读取器扫描...",
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    Button(onClick = onStopAdvertising) {
+                        Text("停止广告")
+                    }
+                }
+                ConnectionState.DISCOVERING -> {
+                    // 发现中：显示正在扫描的提示
+                    Text(
+                        text = "作为读取器，请将设备靠近另一台设备...",
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                ConnectionState.CONNECTING -> {
+                    // 连接中：显示正在建立 Nearby Connections
+                    Text(
+                        text = "已发现设备，正在建立Nearby连接...",
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                ConnectionState.CONNECTED -> {
+                    // 已连接：显示发送和接收数据的 UI
+                    Text(
+                        text = "已建立Nearby Connections",
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
 
-            // 使用说明
-            Text(
-                text = "使用说明：\n" +
-                        "1. 输入消息并点击'激活发送'\n" +
-                        "2. 将设备背靠背靠近另一台设备\n" +
-                        "3. 触摸屏幕发送消息",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 16.dp)
-            )
+                    // 接收消息区域
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        elevation = CardDefaults.cardElevation(8.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = "接收到的消息", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                text = receivedNearbyMessage.ifEmpty { "等待接收消息..." },
+                                modifier = Modifier.defaultMinSize(minHeight = 50.dp)
+                            )
+                        }
+                    }
 
-            if (isBeamActive) {
-                Text(
-                    text = "发送模式已激活 - 准备发送消息",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+                    // 发送消息区域
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(8.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = "发送消息", style = MaterialTheme.typography.titleMedium)
+                            OutlinedTextField(
+                                value = messageToSend,
+                                onValueChange = onMessageChange,
+                                label = { Text("输入要发送的消息") },
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                            )
+                            Button(
+                                onClick = { onSendMessage(messageToSend) },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = messageToSend.isNotEmpty()
+                            ) {
+                                Text("发送")
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
+// 预览函数
+@Preview(showBackground = true, widthDp = 360, heightDp = 720)
 @Composable
 fun P2PScreenPreview() {
-    P2PScreen(
-        isNfcEnabled = true,
-        isBeamActive = true,
-        receivedMessage = "收到的信息",
-        messageToSend = "准备发送的信息",
-        onMessageChange = {},
-        onEnableBeam = {},
-        onDisableBeam = {},
-        onEnableNfc = {}
-    )
+    MyApplicationTheme {
+        P2PScreen(
+            isNfcEnabled = true,
+            connectionState = ConnectionState.CONNECTED,
+            receivedNearbyMessage = "Hello via Nearby!",
+            messageToSend = "Sending data...",
+            onMessageChange = {},
+            onStartAdvertising = {},
+            onStopAdvertising = {},
+            onStartDiscovery = {},
+            onSendMessage = {},
+            onEnableNfc = {}
+        )
+    }
 }

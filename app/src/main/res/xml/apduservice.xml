@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android">
+    android:description="@string/servicedesc"
+    android:requireDeviceUnlock="false">
+    <aid-group android:description="@string/aiddesc"
+        android:category="other">
+        <!-- 替换为您的应用程序的实际AID -->
+        <!-- 例如：F0010203040506 (16进制，长度5-16字节) -->
+        <aid-filter android:name="F012345678"/>
+        <!-- 您可以有多个 aid-filter 在一个 aid-group 中 -->
+        <!-- <aid-filter android:name="D2760000850101"/> -->
+    </aid-group>
+</host-apdu-service>

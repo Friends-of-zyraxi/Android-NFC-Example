@@ -71,9 +71,9 @@
     <string name="format_url">• 网址(自动识别http/https)</string>
     <string name="format_text">• 普通文本</string>
     <string name="back_button">返回读取界面</string>
-
-
-
+    <string name="servicedesc">My Application HCE Service</string>
+    <string name="aiddesc">Application AID Group</string>
+    <string name="title_activity_card_emulation_device">CardEmulationDeviceActivity</string>
 
 
 </resources>

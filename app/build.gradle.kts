@@ -81,9 +81,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)  // 预览功能主依赖
     implementation(libs.androidx.material3)
     // 更新 ConstraintLayout Compose 依赖版本
-    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.0")
+    implementation(libs.androidx.constraintlayout.compose)
     // 添加这两行调试依赖 ↓
     debugImplementation(libs.androidx.ui.tooling)      // 必须添加
-    debugImplementation("androidx.compose.ui:ui-tooling:1.6.0") // 如果仍有问题添加这行
-    implementation("androidx.navigation:navigation-compose:2.7.7")//导航
+    debugImplementation(libs.ui.tooling) // 如果仍有问题添加这行
+    implementation(libs.androidx.navigation.compose)//导航
+    // 添加 Nearby Connections 依赖
+    implementation(libs.play.services.nearby)
 }
