@@ -40,7 +40,7 @@ fun P2PScreen(
     ) {
         // 标题
         Text(
-            text = "NFC + Nearby Connections",
+            text = "NFC 近距通信",
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.padding(bottom = 24.dp)
         )
@@ -70,29 +70,29 @@ fun P2PScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(onClick = onStartDiscovery) {
-                            Text("作为读取器 (发现者)")
+                            Text("用户 1") // 发现者
                         }
                         Button(onClick = onStartAdvertising) {
-                            Text("作为卡片 (广告者)")
+                            Text("用户 2") // 广播者
                         }
                     }
                 }
                 ConnectionState.ADVERTISING -> {
                     // 广告中：显示等待连接的提示
                     Text(
-                        text = "作为卡片，正在等待读取器扫描...",
+                        text = "正在等待读取器扫描...",
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
                     )
                     Button(onClick = onStopAdvertising) {
-                        Text("停止广告")
+                        Text("停止广播")
                     }
                 }
                 ConnectionState.DISCOVERING -> {
                     // 发现中：显示正在扫描的提示
                     Text(
-                        text = "作为读取器，请将设备靠近另一台设备...",
+                        text = "请将设备靠近另一台设备...",
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
@@ -101,7 +101,7 @@ fun P2PScreen(
                 ConnectionState.CONNECTING -> {
                     // 连接中：显示正在建立 Nearby Connections
                     Text(
-                        text = "已发现设备，正在建立Nearby连接...",
+                        text = "已发现设备，正在建立近距连接...",
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
@@ -110,7 +110,7 @@ fun P2PScreen(
                 ConnectionState.CONNECTED -> {
                     // 已连接：显示发送和接收数据的 UI
                     Text(
-                        text = "已建立Nearby Connections",
+                        text = "已建立近距连接",
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
@@ -166,8 +166,8 @@ fun P2PScreenPreview() {
         P2PScreen(
             isNfcEnabled = true,
             connectionState = ConnectionState.CONNECTED,
-            receivedNearbyMessage = "Hello via Nearby!",
-            messageToSend = "Sending data...",
+            receivedNearbyMessage = "接收到的消息",
+            messageToSend = "要发送的消息",
             onMessageChange = {},
             onStartAdvertising = {},
             onStopAdvertising = {},
