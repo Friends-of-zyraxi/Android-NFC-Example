@@ -6,9 +6,11 @@ import com.example.myapplication.ui.theme.P2PScreen
 import com.example.myapplication.ReadCard
 import com.example.myapplication.WriteCard
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
@@ -101,16 +103,24 @@ fun BottomNavigationApp(
             }
         }
     ) { innerPadding ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.TopCenter
         ) {
-            when (navigationItems[selectedItemIndex]) {
-                NavigationItem.READ -> readerScreen()
-                NavigationItem.WRITE -> writeScreen()
-                NavigationItem.P2P -> p2pScreen()
+            // 在大屏上（>680dp）限制内容最大宽度，防止 UI 过度拉伸
+            val contentModifier = if (maxWidth > 680.dp) {
+                Modifier.widthIn(max = 680.dp).fillMaxSize()
+            } else {
+                Modifier.fillMaxSize()
+            }
+            Box(modifier = contentModifier) {
+                when (navigationItems[selectedItemIndex]) {
+                    NavigationItem.READ -> readerScreen()
+                    NavigationItem.WRITE -> writeScreen()
+                    NavigationItem.P2P -> p2pScreen()
+                }
             }
         }
     }

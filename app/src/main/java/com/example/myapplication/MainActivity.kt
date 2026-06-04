@@ -22,7 +22,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
-import androidx.navigation.compose.rememberNavController
+
 import com.example.myapplication.ui.theme.BottomNavigationApp
 import com.example.myapplication.ui.theme.ConnectionState
 import com.example.myapplication.ui.theme.MyApplicationTheme
@@ -137,9 +137,6 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 val coroutineScope = rememberCoroutineScope()
                 snackbarHostState = remember { SnackbarHostState() } // 设置全局状态
-
-                val navController = rememberNavController()
-
                 BottomNavigationApp(
                     readerScreen = {
                         NFCReaderScreen(
