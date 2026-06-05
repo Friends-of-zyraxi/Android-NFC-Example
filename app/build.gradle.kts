@@ -7,12 +7,12 @@ plugins {
 @Suppress("DEPRECATION")
 android {
     namespace = "com.example.myapplication"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 34
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "20260605"
 

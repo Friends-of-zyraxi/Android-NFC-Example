@@ -1,10 +1,4 @@
 package com.example.myapplication.ui.theme
-import androidx.compose.foundation.background
-import com.example.myapplication.ui.theme.NFCReaderScreen
-import com.example.myapplication.ui.theme.WriteCardScreen
-import com.example.myapplication.ui.theme.P2PScreen
-import com.example.myapplication.ReadCard
-import com.example.myapplication.WriteCard
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -16,9 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +25,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -110,7 +100,7 @@ fun BottomNavigationApp(
             contentAlignment = Alignment.TopCenter
         ) {
             // 在大屏上（>680dp）限制内容最大宽度，防止 UI 过度拉伸
-            val contentModifier = if (maxWidth > 680.dp) {
+            val contentModifier = if (this.maxWidth > 680.dp) {
                 Modifier.widthIn(max = 680.dp).fillMaxSize()
             } else {
                 Modifier.fillMaxSize()
@@ -136,6 +126,4 @@ fun PreviewBottomNavigationApp() {
             p2pScreen = {}
         )
     }
-}
-class NavigationView {
 }

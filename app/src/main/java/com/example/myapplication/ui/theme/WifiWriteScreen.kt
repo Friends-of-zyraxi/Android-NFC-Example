@@ -54,7 +54,7 @@ fun WifiWriteScreen(
     // 文本框宽度
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
-    Scaffold() { innerPadding ->
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
