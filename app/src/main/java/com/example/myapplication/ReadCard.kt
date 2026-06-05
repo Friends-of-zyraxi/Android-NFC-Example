@@ -104,6 +104,7 @@ class ReadCard : AppCompatActivity() {
             }
         }
 
+        @Suppress("DEPRECATION")
         intentFiltersArray = arrayOf(
             ndef,
             IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED),

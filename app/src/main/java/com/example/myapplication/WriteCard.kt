@@ -72,6 +72,7 @@ class WriteCard : ComponentActivity() {
             PendingIntent.FLAG_MUTABLE
         )
 
+        @Suppress("DEPRECATION")
         intentFiltersArray = arrayOf(
             IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED).apply {
                 try { addDataType("*/*") } catch (e: Exception) { Log.e("NFC", "MIME类型错误", e) }

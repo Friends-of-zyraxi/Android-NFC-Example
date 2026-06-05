@@ -111,6 +111,7 @@ class MainActivity : ComponentActivity() {
                 throw RuntimeException("Failed to add MIME type", e)
             }
         }
+        @Suppress("DEPRECATION")
         intentFiltersArray = arrayOf(
             ndefFilter,
             IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED),

@@ -3,21 +3,16 @@ package com.example.myapplication.ui.theme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
-import com.example.myapplication.R
 
 // 定义加密类型选项
 enum class EncryptionType(val displayName: String) {
@@ -127,7 +122,7 @@ fun WifiWriteScreen(
                     expanded = encryptionExpanded,
                     onDismissRequest = { encryptionExpanded = false }
                 ) {
-                    EncryptionType.values().forEach { type ->
+                    EncryptionType.entries.forEach { type ->
                         DropdownMenuItem(
                             text = { Text(type.displayName) },
                             onClick = {
@@ -167,7 +162,7 @@ fun WifiWriteScreen(
                     expanded = authExpanded,
                     onDismissRequest = { authExpanded = false }
                 ) {
-                    AuthType.values().forEach { type ->
+                    AuthType.entries.forEach { type ->
                         DropdownMenuItem(
                             text = { Text(type.displayName) },
                             onClick = {
