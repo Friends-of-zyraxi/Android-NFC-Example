@@ -10,7 +10,6 @@ import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.*
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -93,11 +92,7 @@ class ReadCard : AppCompatActivity() {
         }
         pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_MUTABLE
-            } else {
-                0
-            }
+            PendingIntent.FLAG_MUTABLE
         )
 
         // 设置Intent过滤器
@@ -143,20 +138,17 @@ class ReadCard : AppCompatActivity() {
                     isButtonVisible = isButtonVisible,
                     snackbarHostState = snackbarHostState,
                     onCheckNfcClick = {
-                        checkNfcAvailability(
-                            isFirstCheck = false,
-                            showMessage = { messageRes, actionRes, action ->
-                                coroutineScope.launch {
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = context.getString(messageRes),
-                                        actionLabel = if (actionRes != 0) context.getString(actionRes) else null
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        action?.invoke()
-                                    }
+                        checkNfcAvailability { messageRes, actionRes, action ->
+                            coroutineScope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = context.getString(messageRes),
+                                    actionLabel = if (actionRes != 0) context.getString(actionRes) else null
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    action?.invoke()
                                 }
                             }
-                        )
+                        }
                     },
                 )
             }
@@ -166,7 +158,6 @@ class ReadCard : AppCompatActivity() {
     }
 
     private fun checkNfcAvailability(
-        isFirstCheck: Boolean,
         showMessage: (Int, Int, (() -> Unit)?) -> Unit
     ): Boolean {
         return when {
@@ -181,10 +172,8 @@ class ReadCard : AppCompatActivity() {
                 false
             }
             else -> {
-                if (!isFirstCheck) {
-                    showMessage(R.string.NFCSP, 0, null)
-                    isButtonVisible = false
-                }
+                showMessage(R.string.NFCSP, 0, null)
+                isButtonVisible = false
                 true
             }
         }
@@ -216,12 +205,7 @@ class ReadCard : AppCompatActivity() {
             return
         }
 
-        val tag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
-        }
+        val tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
 
         if (tag == null) {
             tagContent = "未发现NFC标签"
@@ -231,9 +215,9 @@ class ReadCard : AppCompatActivity() {
         tagInfo = getString(R.string.scannedTag, tag.toString())
         Log.d(TAG, "Intent Action: ${intent.action}")
 
-        val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+        val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES, NdefMessage::class.java)
         if (rawMessages != null) {
-            val messages = rawMessages.map { it as NdefMessage }
+            val messages = rawMessages.toList()
             tagContent = parseNdefMessages(messages)
         } else {
             // 如果标签没有 NDEF 消息，但可以识别为特定技术类型，也可以处理
@@ -363,8 +347,7 @@ class ReadCard : AppCompatActivity() {
 
                 0x1020 -> sb.appendLine("MAC地址: ${data.toMacAddress()}")
                 0x1026 -> {
-                    val netType = data[0].toInt() and 0xFF
-                    val netTypeName = when (netType) {
+                    val netTypeName = when (val netType = data[0].toInt() and 0xFF) {
                         0x00 -> "未知"
                         0x01 -> "基础设施"
                         0x02 -> "独立"
@@ -446,13 +429,6 @@ class ReadCard : AppCompatActivity() {
     }
 
     // 扩展函数
-    private fun ByteArray.readUShort(offset: Int): Int =
-        (this[offset].toInt() shl 8) or this[offset + 1].toInt()
-
-    private fun ByteArray.readString(offset: Int, length: Int): String =
-        String(this, offset, length, Charsets.UTF_8)
-
-
     private fun NdefRecord.toHexString(): String =
         this.payload.joinToString("") { "%02X".format(it) }
 }

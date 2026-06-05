@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+@Suppress("DEPRECATION")
 android {
     namespace = "com.example.myapplication"
     compileSdk = 36
@@ -13,7 +14,7 @@ android {
         minSdk = 34
         targetSdk = 36
         versionCode = 1
-        versionName = "20251023"
+        versionName = "20260605"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -34,6 +35,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    @Suppress("DEPRECATION")
     kotlinOptions {
         jvmTarget = "1.8"
     }

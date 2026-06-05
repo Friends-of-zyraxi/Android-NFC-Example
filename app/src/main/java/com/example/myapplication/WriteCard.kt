@@ -9,7 +9,6 @@ import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.*
 import android.os.Bundle
-import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -17,8 +16,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.io.IOException
-import com.example.myapplication.ui.theme.WriteCardScreen
-import com.example.myapplication.MainActivity
 
 @OptIn(ExperimentalStdlibApi::class)
 class WriteCard : ComponentActivity() {
@@ -72,11 +69,7 @@ class WriteCard : ComponentActivity() {
         pendingIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_MUTABLE
-            } else {
-                0
-            }
+            PendingIntent.FLAG_MUTABLE
         )
 
         intentFiltersArray = arrayOf(
@@ -103,12 +96,7 @@ class WriteCard : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (currentWriteMode != WriteMode.IDLE) {
-            val tag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
-            }
+            val tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
 
             handleTagWrite(tag)
         }

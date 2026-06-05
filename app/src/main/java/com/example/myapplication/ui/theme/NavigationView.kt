@@ -82,7 +82,7 @@ fun BottomNavigationApp(
                     }
                 )
                 Text(
-                    text = "版本: 20251023",
+                    text = "版本: 20260605",
                     style = MaterialTheme.typography.bodySmall, // 使用较小的文本样式
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally) // 使文本在 TopAppBar 下方居中

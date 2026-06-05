@@ -3,7 +3,6 @@ package com.example.myapplication
 import android.nfc.cardemulation.HostApduService
 import android.os.Bundle
 import android.util.Log
-import java.util.Arrays
 
 class MyHostApduService : HostApduService() {
 
@@ -20,14 +19,10 @@ class MyHostApduService : HostApduService() {
 
         // 状态字：成功
         val SW_OK = hexStringToByteArray("9000")
-        // 状态字：未找到CLA（Class byte）
-        val SW_CLA_NOT_SUPPORTED = hexStringToByteArray("6E00")
         // 状态字：未找到INS（Instruction byte）
         val SW_INS_NOT_SUPPORTED = hexStringToByteArray("6D00")
         // 状态字：数据错误
         val SW_DATA_INVALID = hexStringToByteArray("6984")
-        // 状态字：未知错误
-        val SW_UNKNOWN_ERROR = hexStringToByteArray("6F00")
 
         // 我们的应用特定的APDU指令 (示例)
         // CLA INS P1 P2 Lc Data Le
@@ -50,7 +45,7 @@ class MyHostApduService : HostApduService() {
         val header = commandApdu.copyOfRange(0, 4) // CLA INS P1 P2
 
         // 1. 处理 SELECT AID 命令 (通常由系统处理，但我们可以记录或有特定逻辑)
-        if (Arrays.equals(SELECT_APDU_HEADER, header) && commandApdu.size >= 5) {
+        if (header.contentEquals(SELECT_APDU_HEADER) && commandApdu.size >= 5) {
             val aidLength = commandApdu[4].toInt()
             if (commandApdu.size >= 5 + aidLength) {
                 val aid = commandApdu.copyOfRange(5, 5 + aidLength)
@@ -67,13 +62,13 @@ class MyHostApduService : HostApduService() {
         }
 
         // 2. 处理我们自定义的命令
-        if (Arrays.equals(CMD_GET_DEVICE_NAME, header)) {
+        if (header.contentEquals(CMD_GET_DEVICE_NAME)) {
             Log.i(TAG, "Command: GET_DEVICE_NAME")
             val nameBytes = deviceNameToShare.toByteArray(Charsets.UTF_8)
             return nameBytes + SW_OK
         }
 
-        if (Arrays.equals(CMD_CONFIRM_CONNECTION, header)) {
+        if (header.contentEquals(CMD_CONFIRM_CONNECTION)) {
             Log.i(TAG, "Command: CONFIRM_CONNECTION")
             // 可以在这里处理数据 (Lc 和 Data 部分)
             // val lc = commandApdu[4].toInt()
@@ -96,18 +91,6 @@ class MyHostApduService : HostApduService() {
         connectionEstablished = false
         // 通知UI连接已断开
         // sendConnectionStatusBroadcast(false)
-    }
-
-    // 辅助函数将十六进制字符串转换为字节数组
-    private fun hexStringToByteArray(s: String): ByteArray {
-        val len = s.length
-        val data = ByteArray(len / 2)
-        var i = 0
-        while (i < len) {
-            data[i / 2] = ((Character.digit(s[i], 16) shl 4) + Character.digit(s[i + 1], 16)).toByte()
-            i += 2
-        }
-        return data
     }
 
     // 辅助函数将字节数组转换为十六进制字符串 (用于日志)

@@ -6,8 +6,6 @@ import android.content.Intent
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
-import android.nfc.NfcEvent
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -19,13 +17,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.nio.charset.StandardCharsets
 
 class P2PCommunication : ComponentActivity() {
-    private lateinit var nfcAdapter: NfcAdapter
+    private var nfcAdapter: NfcAdapter? = null
     private var isNfcEnabled by mutableStateOf(false)
     private var isBeamActive by mutableStateOf(false)
     private var receivedMessage by mutableStateOf("")
@@ -64,20 +61,16 @@ class P2PCommunication : ComponentActivity() {
         checkNfcStatus()
 
         // 启用前台调度
-        if (nfcAdapter != null) {
+        nfcAdapter?.let { adapter ->
             val intent = Intent(this, javaClass).apply {
                 addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
-            }
+            val flags = PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             val pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, flags
             )
 
-            nfcAdapter.enableForegroundDispatch(
+            adapter.enableForegroundDispatch(
                 this,
                 pendingIntent,
                 null,
@@ -92,9 +85,7 @@ class P2PCommunication : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         // 禁用前台调度
-        if (nfcAdapter != null) {
-            nfcAdapter.disableForegroundDispatch(this)
-        }
+        nfcAdapter?.disableForegroundDispatch(this)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -104,44 +95,47 @@ class P2PCommunication : ComponentActivity() {
     }
 
     private fun checkNfcStatus() {
-        if (nfcAdapter == null) {
+        val adapter = nfcAdapter
+        if (adapter == null) {
             isNfcEnabled = false
             Toast.makeText(this, "设备不支持NFC", Toast.LENGTH_SHORT).show()
         } else {
-            isNfcEnabled = nfcAdapter.isEnabled
+            isNfcEnabled = adapter.isEnabled
             if (!isNfcEnabled) {
                 Toast.makeText(this, "请启用NFC功能", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun enableBeam() {
-        if (nfcAdapter == null || !isNfcEnabled) return
+        val adapter = nfcAdapter ?: return
+        if (!isNfcEnabled) return
 
         try {
             val message = createNdefMessage(messageToSend)
 
             // 使用反射设置 NDEF 消息回调
-            val setNdefPushMessageCallbackMethod = nfcAdapter.javaClass.getMethod(
+            val setNdefPushMessageCallbackMethod = adapter.javaClass.getMethod(
                 "setNdefPushMessageCallback",
                 NfcAdapter.CreateNdefMessageCallback::class.java,
                 Activity::class.java
             )
             setNdefPushMessageCallbackMethod.invoke(
-                nfcAdapter,
+                adapter,
                 NfcAdapter.CreateNdefMessageCallback { _ -> message },
                 this
             )
 
             // 设置发送完成回调
-            val setOnNdefPushCompleteCallbackMethod = nfcAdapter.javaClass.getMethod(
+            val setOnNdefPushCompleteCallbackMethod = adapter.javaClass.getMethod(
                 "setOnNdefPushCompleteCallback",
                 NfcAdapter.OnNdefPushCompleteCallback::class.java,
                 Activity::class.java
             )
             setOnNdefPushCompleteCallbackMethod.invoke(
-                nfcAdapter,
-                NfcAdapter.OnNdefPushCompleteCallback { event ->
+                adapter,
+                NfcAdapter.OnNdefPushCompleteCallback {
                     runOnUiThread {
                         Toast.makeText(this, "消息已发送", Toast.LENGTH_SHORT).show()
                         disableBeam()
@@ -156,24 +150,25 @@ class P2PCommunication : ComponentActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun disableBeam() {
-        if (nfcAdapter == null) return
+        val adapter = nfcAdapter ?: return
 
         try {
             // 使用反射清除回调
-            val setNdefPushMessageCallbackMethod = nfcAdapter.javaClass.getMethod(
+            val setNdefPushMessageCallbackMethod = adapter.javaClass.getMethod(
                 "setNdefPushMessageCallback",
                 NfcAdapter.CreateNdefMessageCallback::class.java,
                 Activity::class.java
             )
-            setNdefPushMessageCallbackMethod.invoke(nfcAdapter, null, this)
+            setNdefPushMessageCallbackMethod.invoke(adapter, null, this)
 
-            val setOnNdefPushCompleteCallbackMethod = nfcAdapter.javaClass.getMethod(
+            val setOnNdefPushCompleteCallbackMethod = adapter.javaClass.getMethod(
                 "setOnNdefPushCompleteCallback",
                 NfcAdapter.OnNdefPushCompleteCallback::class.java,
                 Activity::class.java
             )
-            setOnNdefPushCompleteCallbackMethod.invoke(nfcAdapter, null, this)
+            setOnNdefPushCompleteCallbackMethod.invoke(adapter, null, this)
 
             isBeamActive = false
         } catch (e: Exception) {
@@ -195,14 +190,10 @@ class P2PCommunication : ComponentActivity() {
 
     private fun processIntent(intent: Intent) {
         if (NfcAdapter.ACTION_NDEF_DISCOVERED == intent.action) {
-            val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
-            if (rawMessages != null && rawMessages.isNotEmpty()) {
-                val messages = arrayOfNulls<NdefMessage>(rawMessages.size)
-                for (i in rawMessages.indices) {
-                    messages[i] = rawMessages[i] as NdefMessage
-                }
+            val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES, NdefMessage::class.java)
+            if (!rawMessages.isNullOrEmpty()) {
                 // 处理第一个消息的第一个记录
-                val record = messages[0]!!.records[0]
+                val record = rawMessages[0].records[0]
                 val payload = record.payload
                 // 直接解析整个payload
                 val text = String(payload, StandardCharsets.UTF_8)

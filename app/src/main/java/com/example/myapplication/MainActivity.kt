@@ -9,10 +9,8 @@ import android.content.pm.PackageManager
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
-import android.nfc.NfcEvent
 import android.nfc.Tag
 import android.nfc.tech.*
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -47,8 +45,7 @@ class MainActivity : ComponentActivity() {
 
     // Nearby Connections 相关
     private lateinit var connectionsClient: ConnectionsClient
-    private val SERVICE_ID = "com.example.myapplication.P2P"
-    private val NFC_RECORD_TYPE = "nearby_endpoint_id"
+    private val serviceId = "com.example.myapplication.P2P"
 
     // 读卡 UI 状态 (来自 ReadCard.kt)
     private var tagInfo by mutableStateOf("")
@@ -103,11 +100,7 @@ class MainActivity : ComponentActivity() {
         }
         pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_MUTABLE
-            } else {
-                0
-            }
+            PendingIntent.FLAG_MUTABLE
         )
 
         // 设置Intent过滤器 (来自 ReadCard.kt)
@@ -145,20 +138,17 @@ class MainActivity : ComponentActivity() {
                             isButtonVisible = isReaderButtonVisible,
                             snackbarHostState = snackbarHostState!!,
                             onCheckNfcClick = {
-                                checkNfcAvailability(
-                                    isFirstCheck = false,
-                                    showMessage = { messageRes, actionRes, action ->
-                                        coroutineScope.launch {
-                                            val result = snackbarHostState!!.showSnackbar(
-                                                message = getString(messageRes),
-                                                actionLabel = if (actionRes != 0) getString(actionRes) else null
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                action?.invoke()
-                                            }
+                                checkNfcAvailability { messageRes, actionRes, action ->
+                                    coroutineScope.launch {
+                                        val result = snackbarHostState!!.showSnackbar(
+                                            message = getString(messageRes),
+                                            actionLabel = if (actionRes != 0) getString(actionRes) else null
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            action?.invoke()
                                         }
                                     }
-                                )
+                                }
                             }
                         )
                     },
@@ -214,7 +204,6 @@ class MainActivity : ComponentActivity() {
     // =======================================================================
 
     private fun checkNfcAvailability(
-        isFirstCheck: Boolean,
         showMessage: (Int, Int, (() -> Unit)?) -> Unit
     ): Boolean {
         return when {
@@ -229,10 +218,8 @@ class MainActivity : ComponentActivity() {
                 false
             }
             else -> {
-                if (!isFirstCheck) {
-                    showMessage(R.string.NFCSP, 0, null)
-                    isReaderButtonVisible = false
-                }
+                showMessage(R.string.NFCSP, 0, null)
+                isReaderButtonVisible = false
                 true
             }
         }
@@ -251,12 +238,7 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        val tag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
-        }
+        val tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
 
         if (tag == null) {
             tagContent = "未发现NFC标签"
@@ -266,9 +248,9 @@ class MainActivity : ComponentActivity() {
         tagInfo = getString(R.string.scannedTag, tag.toString())
         Log.d(TAG, "Intent Action: ${intent.action}")
 
-        val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+        val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES, NdefMessage::class.java)
         if (rawMessages != null) {
-            val messages = rawMessages.map { it as NdefMessage }
+            val messages = rawMessages.toList()
             tagContent = parseNdefMessages(messages)
         } else {
             // 如果标签没有 NDEF 消息，但可以识别为特定技术类型，也可以处理
@@ -394,8 +376,7 @@ class MainActivity : ComponentActivity() {
                 }
                 0x1020 -> sb.appendLine("MAC地址: ${data.toMacAddress()}")
                 0x1026 -> {
-                    val netType = data[0].toInt() and 0xFF
-                    val netTypeName = when (netType) {
+                    val netTypeName = when (val netType = data[0].toInt() and 0xFF) {
                         0x00 -> "未知"
                         0x01 -> "基础设施"
                         0x02 -> "独立"
@@ -476,12 +457,7 @@ class MainActivity : ComponentActivity() {
     // =======================================================================
 
     private fun handleWriteIntent(intent: Intent) {
-        val tag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
-        } ?: return
+        val tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java) ?: return
 
         if (currentWriteMode == WriteMode.IDLE) return // 非写入模式不处理
 
@@ -619,7 +595,7 @@ class MainActivity : ComponentActivity() {
         val advertisingOptions = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
         connectionsClient.startAdvertising(
             "P2P Device",
-            SERVICE_ID,
+            serviceId,
             connectionLifecycleCallback,
             advertisingOptions
         ).addOnSuccessListener {
@@ -642,7 +618,7 @@ class MainActivity : ComponentActivity() {
     private fun startDiscovery() {
         val discoveryOptions = DiscoveryOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
         connectionsClient.startDiscovery(
-            SERVICE_ID,
+            serviceId,
             object : EndpointDiscoveryCallback() {
                 override fun onEndpointFound(endpointId: String, info: DiscoveredEndpointInfo) {
                     Log.d("Nearby", "发现端点: $endpointId")
@@ -727,10 +703,6 @@ class MainActivity : ComponentActivity() {
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
-
-    // 辅助函数 toHexString 避免冲突，直接在类内部定义
-    private fun NdefRecord.toHexString(): String =
-        this.payload.joinToString("") { "%02X".format(it) }
 }
 
 // 注意：MyHostApduService.kt 必须保持独立文件
