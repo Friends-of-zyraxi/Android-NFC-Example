@@ -1,11 +1,13 @@
 package com.example.myapplication.ui.theme
-import androidx.compose.foundation.layout.Box
+
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
@@ -16,11 +18,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,41 +36,50 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
+import kotlinx.coroutines.launch
 
-// 1. 使用枚举定义导航项
 enum class NavigationItem(
-    val title: String,
+    val titleResId: Int,
     val icon: ImageVector
 ) {
-    READ("读卡", Icons.Default.Email),
-    WRITE("写卡", Icons.Default.Edit),
-    P2P("端对端", Icons.Default.Call)
+    READ(R.string.nav_read, Icons.Default.Email),
+    WRITE(R.string.nav_write, Icons.Default.Edit),
+    P2P(R.string.nav_p2p, Icons.Default.Call)
 }
 
-// 2. 主界面组件 - 使用索引保存状态
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomNavigationApp(
     readerScreen: @Composable () -> Unit,
     writeScreen: @Composable () -> Unit,
-    p2pScreen: @Composable () -> Unit
+    p2pScreen: @Composable () -> Unit,
+    snackbarHostState: SnackbarHostState? = null
 ) {
-    // 使用整数索引保存状态（系统支持的基本类型）
     var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState(initialPage = selectedItemIndex, pageCount = { 3 })
+    val coroutineScope = rememberCoroutineScope()
 
-    val navigationItems = listOf(
-        NavigationItem.READ,
-        NavigationItem.WRITE,
-        NavigationItem.P2P
-    )
+    val navigationItems = listOf(NavigationItem.READ, NavigationItem.WRITE, NavigationItem.P2P)
+
+    // 滑动时同步底部导航
+    LaunchedEffect(pagerState.currentPage) {
+        selectedItemIndex = pagerState.currentPage
+    }
+    // 点击导航时同步 pager
+    LaunchedEffect(selectedItemIndex) {
+        if (selectedItemIndex != pagerState.currentPage) {
+            pagerState.animateScrollToPage(selectedItemIndex)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } },
         topBar = {
             Column {
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(R.string.nfc_reader_title),
+                            text = stringResource(R.string.app_title),
                             modifier = Modifier
                                 .wrapContentSize(Alignment.Center)
                                 .align(Alignment.CenterHorizontally)
@@ -72,11 +87,11 @@ fun BottomNavigationApp(
                     }
                 )
                 Text(
-                    text = "版本: 20260605",
-                    style = MaterialTheme.typography.bodySmall, // 使用较小的文本样式
+                    text = stringResource(R.string.version_label),
+                    style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier
-                        .align(Alignment.CenterHorizontally) // 使文本在 TopAppBar 下方居中
-                        .padding(bottom = 4.dp) // 添加一些底部间距
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 4.dp)
                 )
             }
         },
@@ -84,10 +99,13 @@ fun BottomNavigationApp(
             NavigationBar {
                 navigationItems.forEachIndexed { index, item ->
                     NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.title) },
-                        label = { Text(item.title) },
+                        icon = { Icon(item.icon, contentDescription = stringResource(item.titleResId)) },
+                        label = { Text(stringResource(item.titleResId)) },
                         selected = selectedItemIndex == index,
-                        onClick = { selectedItemIndex = index }
+                        onClick = {
+                            selectedItemIndex = index
+                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                        }
                     )
                 }
             }
@@ -99,17 +117,20 @@ fun BottomNavigationApp(
                 .padding(innerPadding),
             contentAlignment = Alignment.TopCenter
         ) {
-            // 在大屏上（>680dp）限制内容最大宽度，防止 UI 过度拉伸
             val contentModifier = if (this.maxWidth > 680.dp) {
                 Modifier.widthIn(max = 680.dp).fillMaxSize()
             } else {
                 Modifier.fillMaxSize()
             }
-            Box(modifier = contentModifier) {
-                when (navigationItems[selectedItemIndex]) {
-                    NavigationItem.READ -> readerScreen()
-                    NavigationItem.WRITE -> writeScreen()
-                    NavigationItem.P2P -> p2pScreen()
+            HorizontalPager(
+                state = pagerState,
+                modifier = contentModifier,
+                beyondViewportPageCount = 1
+            ) { page ->
+                when (page) {
+                    0 -> readerScreen()
+                    1 -> writeScreen()
+                    2 -> p2pScreen()
                 }
             }
         }
@@ -121,8 +142,8 @@ fun BottomNavigationApp(
 fun PreviewBottomNavigationApp() {
     MaterialTheme {
         BottomNavigationApp(
-            readerScreen={},
-            writeScreen={},
+            readerScreen = {},
+            writeScreen = {},
             p2pScreen = {}
         )
     }

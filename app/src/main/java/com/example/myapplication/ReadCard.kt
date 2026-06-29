@@ -163,17 +163,17 @@ class ReadCard : AppCompatActivity() {
     ): Boolean {
         return when {
             nfcAdapter == null -> {
-                showMessage(R.string.NFCNA, R.string.exit) { finish() }
+                showMessage(R.string.msg_nfc_unavailable, R.string.button_exit) { finish() }
                 false
             }
             !nfcAdapter!!.isEnabled -> {
-                showMessage(R.string.enable_NFC, R.string.gotoSettings) {
+                showMessage(R.string.msg_nfc_not_enabled, R.string.button_open_settings) {
                     startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
                 }
                 false
             }
             else -> {
-                showMessage(R.string.NFCSP, 0, null)
+                showMessage(R.string.msg_nfc_available, 0, null)
                 isButtonVisible = false
                 true
             }
@@ -202,18 +202,18 @@ class ReadCard : AppCompatActivity() {
 
     private fun handleNfcIntent(intent: Intent) {
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_NFC)) {
-            tagContent = "设备不支持NFC"
+            tagContent = getString(R.string.msg_device_no_nfc)
             return
         }
 
         val tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
 
         if (tag == null) {
-            tagContent = "未发现NFC标签"
+            tagContent = getString(R.string.msg_no_tag_found)
             return
         }
 
-        tagInfo = getString(R.string.scannedTag, tag.toString())
+        tagInfo = getString(R.string.format_tag_info, tag.toString())
         Log.d(TAG, "Intent Action: ${intent.action}")
 
         val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES, NdefMessage::class.java)
@@ -228,14 +228,14 @@ class ReadCard : AppCompatActivity() {
                     ndef.connect()
                     val message = ndef.ndefMessage
                     tagContent = message?.let { parseNdefMessages(listOf(it)) }
-                        ?: getString(R.string.notSupport)
+                        ?: getString(R.string.msg_unsupported_type)
                     ndef.close()
                 } catch (e: Exception) {
                     Log.e(TAG, "读取NDEF失败", e)
-                    tagContent = "读取标签失败"
+                    tagContent = getString(R.string.msg_read_failed)
                 }
             } else {
-                tagContent = getString(R.string.notSupport)
+                tagContent = getString(R.string.msg_unsupported_type)
             }
         }
     }
@@ -250,7 +250,7 @@ class ReadCard : AppCompatActivity() {
                     NdefRecord.TNF_WELL_KNOWN -> parseWellKnownRecord(record)
                     NdefRecord.TNF_MIME_MEDIA -> parseMimeRecord(record)
                     NdefRecord.TNF_EXTERNAL_TYPE -> parseExternalRecord(record)
-                    else -> "未知类型: ${record.toHexString()}\n"
+                    else -> getString(R.string.format_record_unknown, record.toHexString()) + "\n"
                 })
             }
         }
@@ -261,12 +261,12 @@ class ReadCard : AppCompatActivity() {
     private fun parseWellKnownRecord(record: NdefRecord): String {
         return when {
             record.type.contentEquals(NdefRecord.RTD_TEXT) -> {
-                "文本: ${parseTextRecord(record)}\n"
+                getString(R.string.format_record_text, parseTextRecord(record)) + "\n"
             }
             record.type.contentEquals(NdefRecord.RTD_URI) -> {
-                "URI: ${parseUriRecord(record)}\n"
+                getString(R.string.format_record_uri, parseUriRecord(record)) + "\n"
             }
-            else -> "未知Well Known类型\n"
+            else -> getString(R.string.msg_unknown_well_known) + "\n"
         }
     }
 
@@ -275,18 +275,18 @@ class ReadCard : AppCompatActivity() {
             "application/vnd.wfa.wsc" -> {
                 val wifiPayload = record.payload
                 val wifiInfo = parseWifiRecord(wifiPayload)
-                "WiFi配置:\n$wifiInfo"
+                getString(R.string.format_record_wifi, wifiInfo)
             }
-            "application/vnd.bluetooth.ep.oob" -> "蓝牙配置:\n${parseBluetoothRecord(record)}"
-            else -> "MIME类型: ${record.toMimeType()}\n内容: ${record.payload.toHexString()}\n"
+            "application/vnd.bluetooth.ep.oob" -> getString(R.string.format_record_bluetooth, parseBluetoothRecord(record))
+            else -> getString(R.string.format_record_mime, record.toMimeType(), record.payload.toHexString()) + "\n"
         }
     }
 
 
     private fun parseExternalRecord(record: NdefRecord): String {
         return when (String(record.type)) {
-            "android.com:pkg" -> "应用: ${parseApplicationRecord(record)}\n"
-            else -> "外部类型: ${String(record.type)}\n"
+            "android.com:pkg" -> getString(R.string.format_record_app, parseApplicationRecord(record)) + "\n"
+            else -> getString(R.string.format_record_external, String(record.type)) + "\n"
         }
     }
 
@@ -299,7 +299,7 @@ class ReadCard : AppCompatActivity() {
                 Charset.forName(textEncoding))
         } catch (e: Exception) {
             Log.w(TAG, "解析文本记录失败", e)
-            "解析错误"
+            getString(R.string.msg_parse_error)
         }
     }
 
@@ -309,7 +309,7 @@ class ReadCard : AppCompatActivity() {
             prefix + String(record.payload, 1, record.payload.size - 1, Charsets.UTF_8)
         } catch (e: Exception) {
             Log.w(TAG, "解析URI记录失败", e)
-            "无效URI"
+            getString(R.string.msg_invalid_uri)
         }
     }
 
@@ -326,40 +326,40 @@ class ReadCard : AppCompatActivity() {
             index += length
 
             when (type) {
-                0x1045 -> sb.appendLine("SSID: ${String(data)}")
-                0x1027 -> sb.appendLine("密码: ${String(data)}")
+                0x1045 -> sb.appendLine(getString(R.string.format_ssid, String(data)))
+                0x1027 -> sb.append(getString(R.string.format_wifi_password, String(data)))
                 0x1003 -> {
                     if (data.size >= 2) {
                         val encryptionType = ((data[0].toInt() and 0xFF) shl 8) or (data[1].toInt() and 0xFF)
-                        sb.appendLine("加密类型: ${getEncryptionTypeName(encryptionType)}")
+                        sb.appendLine(getString(R.string.format_encryption_type, getEncryptionTypeName(encryptionType)))
                     } else {
-                        sb.appendLine("加密类型: 数据不足")
+                        sb.appendLine(getString(R.string.msg_encryption_data_short))
                     }
                 }
                 0x100F -> {
                     if (data.size >= 2) {
                         val authType = ((data[0].toInt() and 0xFF) shl 8) or (data[1].toInt() and 0xFF)
-                        sb.appendLine("身份验证类型: ${getAuthTypeName(authType)}")
+                        sb.appendLine(getString(R.string.format_auth_type, getAuthTypeName(authType)))
                     } else {
-                        sb.appendLine("身份验证类型: 数据不足")
+                        sb.appendLine(getString(R.string.msg_auth_data_short))
                     }
                 }
 
 
-                0x1020 -> sb.appendLine("MAC地址: ${data.toMacAddress()}")
+                0x1020 -> sb.appendLine(getString(R.string.format_mac_address, data.toMacAddress()))
                 0x1026 -> {
                     val netTypeName = when (val netType = data[0].toInt() and 0xFF) {
-                        0x00 -> "未知"
-                        0x01 -> "基础设施"
-                        0x02 -> "独立"
-                        else -> "保留/自定义（0x${netType.toString(16)})"
+                        0x00 -> getString(R.string.msg_unknown)
+                        0x01 -> getString(R.string.msg_infrastructure)
+                        0x02 -> getString(R.string.msg_independent)
+                        else -> getString(R.string.format_reserved_type, netType.toString(16))
                     }
-                    sb.appendLine("网络类型: $netTypeName")
+                    sb.appendLine(getString(R.string.format_network_type, netTypeName))
                 }
                 0x100E -> {
                     sb.append(parseWifiRecord(data))  // 递归解析
                 }
-                else -> sb.appendLine("未知字段: 0x${type.toString(16)} 数据: ${data.toHexString()}")
+                else -> sb.appendLine(getString(R.string.format_unknown_field, type.toString(16), data.toHexString()))
             }
         }
         return sb.toString()
@@ -370,25 +370,25 @@ class ReadCard : AppCompatActivity() {
     fun ByteArray.toHexString(): String = joinToString("") { "%02X".format(it) }
 
     fun getAuthTypeName(value: Int): String = when(value) {
-        0x0001 -> "Open System"
-        0x0002 -> "WPA-PSK"
-        0x0004 -> "Shared Key"
-        0x0008 -> "WPA-EAP"
-        0x0010 -> "WPA2-EAP"
-        0x0020 -> "WPA2-PSK"
-        0x0040 -> "WPA3-SAE"
-        else -> "未知（0x%04X）".format(value)
+        0x0001 -> getString(R.string.auth_open_system)
+        0x0002 -> getString(R.string.auth_wpa_psk)
+        0x0004 -> getString(R.string.auth_shared_key)
+        0x0008 -> getString(R.string.auth_wpa_eap)
+        0x0010 -> getString(R.string.auth_wpa2_eap)
+        0x0020 -> getString(R.string.auth_wpa2_psk)
+        0x0040 -> getString(R.string.auth_wpa3_sae)
+        else -> getString(R.string.format_unknown_auth, value)
     }
 
     fun getEncryptionTypeName(value: Int): String = when(value) {
-        0x0001 -> "无"
-        0x0002 -> "WEP"
-        0x0022 -> "WEP"
-        0x0004 -> "TKIP"
-        0x0008 -> "AES"
-        0x0010 -> "AES/TKIP"
-        0x0020 -> "AES"
-        else -> "未知（0x%04X）".format(value)
+        0x0001 -> getString(R.string.enc_none)
+        0x0002 -> getString(R.string.enc_wep)
+        0x0022 -> getString(R.string.enc_wep)
+        0x0004 -> getString(R.string.enc_tkip)
+        0x0008 -> getString(R.string.enc_aes)
+        0x0010 -> getString(R.string.enc_aes_tkip)
+        0x0020 -> getString(R.string.enc_aes)
+        else -> getString(R.string.format_unknown_encryption, value)
     }
 
     private fun parseBluetoothRecord(record: NdefRecord): String {
@@ -399,12 +399,12 @@ class ReadCard : AppCompatActivity() {
             val uri = record.toUri()!!
             val mac = uri.host ?: "未知"
             val name = uri.path?.substringAfter("/")?.trim().orEmpty()
-            return "MAC: $mac\n名称: $name\n原始字节: $hexDump"
+            return getString(R.string.format_bt_uri_record, mac, name, hexDump)
         } else {
             val bytes = record.payload
             Log.d("BluetoothTag", "原始数据: ${bytes.joinToString(" ") { "%02X".format(it) }}")
 
-            if (bytes.size < 8) return "无效蓝牙数据（长度不足）"
+            if (bytes.size < 8) return getString(R.string.msg_invalid_bt_data)
 
 // 跳过前两个字节
             val mac = bytes.copyOfRange(2, 8).reversed().joinToString(":") { "%02X".format(it) }
@@ -414,7 +414,7 @@ class ReadCard : AppCompatActivity() {
                 ""
             }
 
-            return "MAC: $mac\n名称: $name"
+            return getString(R.string.format_bt_raw_record, mac, name)
 
         }
     }
@@ -425,7 +425,7 @@ class ReadCard : AppCompatActivity() {
             String(record.payload, Charsets.UTF_8)
         } catch (e: Exception) {
             Log.w(TAG, "解析应用记录失败", e)
-            "未知应用"
+            getString(R.string.msg_unknown_app)
         }
     }
 

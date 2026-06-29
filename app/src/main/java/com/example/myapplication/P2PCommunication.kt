@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import java.nio.charset.StandardCharsets
 
@@ -98,11 +99,11 @@ class P2PCommunication : ComponentActivity() {
         val adapter = nfcAdapter
         if (adapter == null) {
             isNfcEnabled = false
-            Toast.makeText(this, "设备不支持NFC", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_device_no_nfc), Toast.LENGTH_SHORT).show()
         } else {
             isNfcEnabled = adapter.isEnabled
             if (!isNfcEnabled) {
-                Toast.makeText(this, "请启用NFC功能", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.toast_enable_nfc), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -137,7 +138,7 @@ class P2PCommunication : ComponentActivity() {
                 adapter,
                 NfcAdapter.OnNdefPushCompleteCallback {
                     runOnUiThread {
-                        Toast.makeText(this, "消息已发送", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.toast_beam_message_sent), Toast.LENGTH_SHORT).show()
                         disableBeam()
                     }
                 },
@@ -146,7 +147,7 @@ class P2PCommunication : ComponentActivity() {
 
             isBeamActive = true
         } catch (e: Exception) {
-            Toast.makeText(this, "NFC 功能不可用: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.format_beam_unavailable, e.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -198,7 +199,7 @@ class P2PCommunication : ComponentActivity() {
                 // 直接解析整个payload
                 val text = String(payload, StandardCharsets.UTF_8)
                 receivedMessage = text
-                Toast.makeText(this, "收到新消息", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.toast_new_message_received), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -226,19 +227,19 @@ fun NFCApp(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "NFC P2P通信",
+            text = stringResource(R.string.p2p_title),
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
         if (!isNfcEnabled) {
             Text(
-                text = "NFC功能未启用",
+                text = stringResource(R.string.p2p_text_nfc_disabled),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             Button(onClick = onEnableNfc) {
-                Text("启用NFC")
+                Text(stringResource(R.string.p2p_button_enable_nfc))
             }
         } else {
             // 接收消息区域
@@ -252,12 +253,12 @@ fun NFCApp(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "接收到的消息",
+                        text = stringResource(R.string.p2p_label_received),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
-                        text = receivedMessage.ifEmpty { "等待接收消息..." },
+                        text = receivedMessage.ifEmpty { stringResource(R.string.p2p_placeholder_waiting) },
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -277,14 +278,14 @@ fun NFCApp(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "发送消息",
+                        text = stringResource(R.string.p2p_label_send),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
                         value = messageToSend,
                         onValueChange = onMessageChange,
-                        label = { Text("输入要发送的消息") },
+                        label = { Text(stringResource(R.string.p2p_label_message_input)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
@@ -298,7 +299,7 @@ fun NFCApp(
                             onClick = onEnableBeam,
                             enabled = messageToSend.isNotEmpty() && !isBeamActive
                         ) {
-                            Text("激活发送")
+                            Text(stringResource(R.string.p2p_button_activate_beam))
                         }
 
                         Button(
@@ -309,7 +310,7 @@ fun NFCApp(
                                 contentColor = MaterialTheme.colorScheme.onErrorContainer
                             )
                         ) {
-                            Text("停止发送")
+                            Text(stringResource(R.string.p2p_button_stop_beam))
                         }
                     }
                 }
@@ -317,10 +318,7 @@ fun NFCApp(
 
             // 使用说明
             Text(
-                text = "使用说明：\n" +
-                        "1. 输入消息并点击'激活发送'\n" +
-                        "2. 将设备背靠背靠近另一台设备\n" +
-                        "3. 触摸屏幕发送消息",
+                text = stringResource(R.string.p2p_text_beam_instructions),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 16.dp)
@@ -328,7 +326,7 @@ fun NFCApp(
 
             if (isBeamActive) {
                 Text(
-                    text = "发送模式已激活 - 准备发送消息",
+                    text = stringResource(R.string.p2p_text_beam_active),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 16.dp)

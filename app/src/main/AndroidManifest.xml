@@ -15,12 +15,12 @@
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
 
 
-    <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
     <uses-feature
         android:name="android.hardware.nfc.hce"
-        android:required="true" />
+        android:required="false" />
 
 
     <application
@@ -36,12 +36,14 @@
         <activity
             android:name=".CardEmulationDeviceActivity"
             android:exported="true"
-            android:label="@string/title_activity_card_emulation_device"
+            android:label="@string/title_card_emulation_activity"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.MyApplication" >
         </activity>
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.MyApplication" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -141,12 +143,9 @@
         <!-- android:exported="false" -->
         <!-- android:theme="@style/Theme.MyApplication" /> &lt;!&ndash; 使用Compose主题 &ndash;&gt; -->
         <activity
-            android:name=".WriteWiFi"
-            android:exported="false"
-            android:theme="@style/Theme.MyApplication" /> <!-- 使用Compose主题 -->
-        <activity
             android:name=".P2PCommunication"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.MyApplication" >
         </activity>
     </application>

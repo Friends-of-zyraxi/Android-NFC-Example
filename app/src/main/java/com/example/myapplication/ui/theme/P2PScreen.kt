@@ -1,154 +1,393 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.myapplication.ui.theme
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 
-// 定义一个枚举类来表示连接状态，让 UI 更好地响应不同阶段
 enum class ConnectionState {
-    DISCONNECTED,       // 初始状态，无连接
-    ADVERTISING,        // 设备正在广告其 Nearby Endpoint ID (卡模拟模式)
-    DISCOVERING,        // 设备正在发现其他设备 (读取器模式)
-    CONNECTING,         // 接收到NFC数据，正在通过Nearby发起连接
-    CONNECTED           // 已通过 Nearby Connections 建立连接
+    DISCONNECTED, ADVERTISING, DISCOVERING, CONNECTING, CONNECTED
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun P2PScreen(
     isNfcEnabled: Boolean,
     connectionState: ConnectionState,
     receivedNearbyMessage: String,
-    messageToSend: String,
     onMessageChange: (String) -> Unit,
     onStartAdvertising: () -> Unit,
     onStopAdvertising: () -> Unit,
     onStartDiscovery: () -> Unit,
+    onStopDiscovery: () -> Unit,
+    onDisconnect: () -> Unit,
     onSendMessage: (String) -> Unit,
-    onEnableNfc: () -> Unit
+    onEnableNfc: () -> Unit,
+    hasPermissions: Boolean,
+    onRequestPermissions: () -> Unit
 ) {
-    Column(
+    val focusManager = LocalFocusManager.current
+
+    // 数据类型 & 输入 —— 仅在已连接后使用
+    var selectedType by remember { mutableStateOf(WriteDataType.TEXT) }
+    var textInput by remember { mutableStateOf("") }
+    var wifiSsid by remember { mutableStateOf("") }
+    var wifiPassword by remember { mutableStateOf("") }
+    var wifiEncryption by remember { mutableStateOf(WifiEncryption.WPA2_AES) }
+    var wifiAuth by remember { mutableStateOf(WifiAuth.WPA2_PSK) }
+    var btMac by remember { mutableStateOf("") }
+    var btName by remember { mutableStateOf("") }
+
+    LaunchedEffect(selectedType) {
+        textInput = ""; wifiSsid = ""; wifiPassword = ""; btMac = ""; btName = ""
+    }
+
+    fun buildFormattedMessage(): String = when (selectedType) {
+        WriteDataType.TEXT -> "TEXT:$textInput"
+        WriteDataType.URL -> "URL:$textInput"
+        WriteDataType.WIFI -> "WIFI:$wifiSsid|$wifiPassword|${wifiEncryption.wscValue}|${wifiAuth.wscValue}"
+        WriteDataType.BLUETOOTH -> "BT:$btMac|$btName"
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { focusManager.clearFocus() }
     ) {
-        // 标题
-        Text(
-            text = "NFC 近距通信",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        // NFC 状态检查
-        if (!isNfcEnabled) {
-            Text(
-                text = "NFC功能未启用",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            Button(onClick = onEnableNfc) {
-                Text("启用NFC")
+        if (!hasPermissions) {
+            // ---- 无权限提示（居中） ----
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .padding(16.dp),
+                    elevation = CardDefaults.cardElevation(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.p2p_text_permission_required),
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onRequestPermissions) {
+                            Text(stringResource(R.string.button_grant_permission))
+                        }
+                    }
+                }
             }
         } else {
-            // 根据连接状态展示不同的 UI
-            when (connectionState) {
-                ConnectionState.DISCONNECTED -> {
-                    // 初始状态：让用户选择作为广告者还是发现者
+            // ---- 正常 P2P 界面 ----
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 标题
+                Text(
+                    text = stringResource(R.string.p2p_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // NFC 状态检查
+                if (!isNfcEnabled) {
                     Text(
-                        text = "选择连接模式",
-                        style = MaterialTheme.typography.titleMedium,
+                        text = stringResource(R.string.p2p_text_nfc_disabled),
+                        color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Button(onClick = onStartDiscovery) {
-                            Text("用户 1") // 发现者
-                        }
-                        Button(onClick = onStartAdvertising) {
-                            Text("用户 2") // 广播者
-                        }
+                    Button(onClick = onEnableNfc) {
+                        Text(stringResource(R.string.p2p_button_enable_nfc))
                     }
-                }
-                ConnectionState.ADVERTISING -> {
-                    // 广告中：显示等待连接的提示
-                    Text(
-                        text = "正在等待读取器扫描...",
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                    Button(onClick = onStopAdvertising) {
-                        Text("停止广播")
-                    }
-                }
-                ConnectionState.DISCOVERING -> {
-                    // 发现中：显示正在扫描的提示
-                    Text(
-                        text = "请将设备靠近另一台设备...",
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-                ConnectionState.CONNECTING -> {
-                    // 连接中：显示正在建立 Nearby Connections
-                    Text(
-                        text = "已发现设备，正在建立近距连接...",
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-                ConnectionState.CONNECTED -> {
-                    // 已连接：显示发送和接收数据的 UI
-                    Text(
-                        text = "已建立近距连接",
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-
-                    // 接收消息区域
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        elevation = CardDefaults.cardElevation(8.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = "接收到的消息", style = MaterialTheme.typography.titleMedium)
+                } else {
+                    // ========================================================
+                    // 根据连接状态展示不同内容
+                    // ========================================================
+                    when (connectionState) {
+                        ConnectionState.DISCONNECTED -> {
                             Text(
-                                text = receivedNearbyMessage.ifEmpty { "等待接收消息..." },
-                                modifier = Modifier.defaultMinSize(minHeight = 50.dp)
+                                text = stringResource(R.string.p2p_label_select_mode),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Button(onClick = onStartDiscovery) {
+                                    Text(stringResource(R.string.p2p_button_discover))
+                                }
+                                Button(onClick = onStartAdvertising) {
+                                    Text(stringResource(R.string.p2p_button_advertise))
+                                }
+                            }
+                        }
+
+                        ConnectionState.ADVERTISING -> {
+                            Spacer(modifier = Modifier.height(32.dp))
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(R.string.p2p_text_waiting_reader),
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = onStopAdvertising) {
+                                Text(stringResource(R.string.p2p_button_stop_advertise))
+                            }
+                        }
+
+                        ConnectionState.DISCOVERING -> {
+                            Spacer(modifier = Modifier.height(32.dp))
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(R.string.p2p_text_approach_device),
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = onStopDiscovery) {
+                                Text(stringResource(R.string.p2p_button_stop_discovery))
+                            }
+                        }
+
+                        ConnectionState.CONNECTING -> {
+                            Spacer(modifier = Modifier.height(32.dp))
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(R.string.p2p_text_connecting),
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
                             )
                         }
-                    }
 
-                    // 发送消息区域
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(8.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = "发送消息", style = MaterialTheme.typography.titleMedium)
-                            OutlinedTextField(
-                                value = messageToSend,
-                                onValueChange = onMessageChange,
-                                label = { Text("输入要发送的消息") },
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                        ConnectionState.CONNECTED -> {
+                            Text(
+                                text = stringResource(R.string.p2p_text_connected),
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
                             )
-                            Button(
-                                onClick = { onSendMessage(messageToSend) },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = messageToSend.isNotEmpty()
+
+                            // ---- 接收消息区域 ----
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                elevation = CardDefaults.cardElevation(8.dp)
                             ) {
-                                Text("发送")
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = stringResource(R.string.p2p_label_received),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (receivedNearbyMessage.isEmpty()) {
+                                        Text(
+                                            text = stringResource(R.string.p2p_placeholder_waiting),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    } else {
+                                        ParsedMessageDisplay(receivedNearbyMessage)
+                                    }
+                                }
+                            }
+
+                            // ---- 类型选择 ----
+                            var typeExpanded by remember { mutableStateOf(false) }
+                            Box(modifier = Modifier.fillMaxWidth(0.85f)) {
+                                OutlinedButton(
+                                    onClick = { typeExpanded = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.format_type_label, stringResource(selectedType.labelResId)))
+                                }
+                                DropdownMenu(
+                                    expanded = typeExpanded,
+                                    onDismissRequest = { typeExpanded = false }
+                                ) {
+                                    WriteDataType.entries.forEach { type ->
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(type.labelResId)) },
+                                            onClick = { selectedType = type; typeExpanded = false }
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // ---- 动态输入区 ----
+                            when (selectedType) {
+                                WriteDataType.TEXT -> {
+                                    OutlinedTextField(
+                                        value = textInput,
+                                        onValueChange = { textInput = it },
+                                        label = { Text(stringResource(R.string.label_text_content)) },
+                                        modifier = Modifier.fillMaxWidth(0.85f),
+                                        minLines = 2
+                                    )
+                                }
+                                WriteDataType.URL -> {
+                                    OutlinedTextField(
+                                        value = textInput,
+                                        onValueChange = { textInput = it },
+                                        label = { Text(stringResource(R.string.label_url_input)) },
+                                        placeholder = { Text(stringResource(R.string.placeholder_url_example)) },
+                                        modifier = Modifier.fillMaxWidth(0.85f),
+                                        singleLine = true
+                                    )
+                                }
+                                WriteDataType.WIFI -> {
+                                    OutlinedTextField(
+                                        value = wifiSsid,
+                                        onValueChange = { wifiSsid = it },
+                                        label = { Text(stringResource(R.string.label_wifi_ssid)) },
+                                        modifier = Modifier.fillMaxWidth(0.85f),
+                                        singleLine = true
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = wifiPassword,
+                                        onValueChange = { wifiPassword = it },
+                                        label = { Text(stringResource(R.string.label_wifi_password)) },
+                                        modifier = Modifier.fillMaxWidth(0.85f),
+                                        singleLine = true
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    var encExpanded by remember { mutableStateOf(false) }
+                                    ExposedDropdownMenuBox(
+                                        expanded = encExpanded,
+                                        onExpandedChange = { encExpanded = it },
+                                        modifier = Modifier.fillMaxWidth(0.85f)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = stringResource(wifiEncryption.displayResId),
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text(stringResource(R.string.label_encryption_type)) },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = encExpanded) },
+                                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = encExpanded,
+                                            onDismissRequest = { encExpanded = false }
+                                        ) {
+                                            WifiEncryption.entries.forEach { enc ->
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(enc.displayResId)) },
+                                                    onClick = { wifiEncryption = enc; encExpanded = false }
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    var authExpanded by remember { mutableStateOf(false) }
+                                    ExposedDropdownMenuBox(
+                                        expanded = authExpanded,
+                                        onExpandedChange = { authExpanded = it },
+                                        modifier = Modifier.fillMaxWidth(0.85f)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = stringResource(wifiAuth.displayResId),
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text(stringResource(R.string.label_auth_type)) },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = authExpanded) },
+                                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = authExpanded,
+                                            onDismissRequest = { authExpanded = false }
+                                        ) {
+                                            WifiAuth.entries.forEach { auth ->
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(auth.displayResId)) },
+                                                    onClick = { wifiAuth = auth; authExpanded = false }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                WriteDataType.BLUETOOTH -> {
+                                    OutlinedTextField(
+                                        value = btMac,
+                                        onValueChange = { btMac = it },
+                                        label = { Text(stringResource(R.string.label_bt_mac)) },
+                                        placeholder = { Text(stringResource(R.string.placeholder_bt_mac)) },
+                                        modifier = Modifier.fillMaxWidth(0.85f),
+                                        singleLine = true
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = btName,
+                                        onValueChange = { btName = it },
+                                        label = { Text(stringResource(R.string.label_bt_name)) },
+                                        placeholder = { Text(stringResource(R.string.placeholder_bt_name)) },
+                                        modifier = Modifier.fillMaxWidth(0.85f),
+                                        singleLine = true
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // ---- 发送按钮 ----
+                            val canSend = when (selectedType) {
+                                WriteDataType.TEXT, WriteDataType.URL -> textInput.isNotEmpty()
+                                WriteDataType.WIFI -> wifiSsid.isNotEmpty()
+                                WriteDataType.BLUETOOTH -> btMac.isNotEmpty()
+                            }
+                            Button(
+                                onClick = {
+                                    val formatted = buildFormattedMessage()
+                                    onMessageChange(formatted)
+                                    onSendMessage(formatted)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp),
+                                enabled = canSend
+                            ) {
+                                Text(stringResource(R.string.p2p_button_send))
+                            }
+
+                            // ---- 断开连接 ----
+                            OutlinedButton(
+                                onClick = onDisconnect,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.p2p_button_disconnect))
                             }
                         }
                     }
@@ -158,22 +397,37 @@ fun P2PScreen(
     }
 }
 
-// 预览函数
-@Preview(showBackground = true, widthDp = 360, heightDp = 720)
+
+// =======================================================================
+// 解析并显示带前缀的消息
+// =======================================================================
 @Composable
-fun P2PScreenPreview() {
-    MyApplicationTheme {
-        P2PScreen(
-            isNfcEnabled = true,
-            connectionState = ConnectionState.CONNECTED,
-            receivedNearbyMessage = "接收到的消息",
-            messageToSend = "要发送的消息",
-            onMessageChange = {},
-            onStartAdvertising = {},
-            onStopAdvertising = {},
-            onStartDiscovery = {},
-            onSendMessage = {},
-            onEnableNfc = {}
-        )
+private fun ParsedMessageDisplay(message: String) {
+    when {
+        message.startsWith("TEXT:") -> Text(stringResource(R.string.format_record_text, message.removePrefix("TEXT:")))
+        message.startsWith("URL:") -> Text(stringResource(R.string.format_record_uri, message.removePrefix("URL:")))
+        message.startsWith("WIFI:") -> {
+            val parts = message.removePrefix("WIFI:").split("|")
+            if (parts.size >= 4) {
+                val encName = WifiEncryption.entries.find { it.wscValue == (parts[2].toIntOrNull() ?: 0) }?.displayResId
+                val authName = WifiAuth.entries.find { it.wscValue == (parts[3].toIntOrNull() ?: 0) }?.displayResId
+                Column {
+                    Text(stringResource(R.string.format_ssid, parts[0]))
+                    if (parts[1].isNotEmpty()) Text(stringResource(R.string.format_wifi_password, parts[1]))
+                    if (encName != null) Text(stringResource(R.string.format_encryption_type, stringResource(encName)))
+                    if (authName != null) Text(stringResource(R.string.format_auth_type, stringResource(authName)))
+                }
+            } else Text(message)
+        }
+        message.startsWith("BT:") -> {
+            val parts = message.removePrefix("BT:").split("|")
+            if (parts.size >= 2) {
+                Column {
+                    Text(stringResource(R.string.format_bt_mac, parts[0]))
+                    if (parts[1].isNotEmpty()) Text(stringResource(R.string.format_bt_device_name, parts[1]))
+                }
+            } else Text(message)
+        }
+        else -> Text(message)
     }
 }

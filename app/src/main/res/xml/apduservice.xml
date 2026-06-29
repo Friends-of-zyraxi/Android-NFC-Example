@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android">
-    android:description="@string/servicedesc"
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/hce_service_desc"
     android:requireDeviceUnlock="false">
-    <aid-group android:description="@string/aiddesc"
-        android:category="other">
-        <!-- 替换为您的应用程序的实际AID -->
-        <!-- 例如：F0010203040506 (16进制，长度5-16字节) -->
+    <aid-group android:description="@string/hce_aid_desc"
+        android:category="payment">
+        <!-- NFC Forum Type 4 Tag AID（NDEF 标签模拟的标准 AID） -->
+        <aid-filter android:name="D2760000850101"/>
+        <!-- 自定义 AID -->
         <aid-filter android:name="F012345678"/>
-        <!-- 您可以有多个 aid-filter 在一个 aid-group 中 -->
-        <!-- <aid-filter android:name="D2760000850101"/> -->
     </aid-group>
 </host-apdu-service>

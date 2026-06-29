@@ -1,79 +1,244 @@
 <resources>
-    <!--NavigationView-->
-    <string name="title_home">读卡</string>
-    <string name="title_dashboard">写卡</string>
-    <string name="title_notifications">端对端</string>
+    <!-- ================================================================== -->
+    <!-- 应用全局                                                             -->
+    <!-- ================================================================== -->
     <string name="app_name">NFC 通信</string>
-    <string name="textview">基于 NFC 的多模式通信实践开发</string>
-    <!--NFCReaderScreen-->
-    <string name="supported_formats">支持的格式：文本、URI、Wi-Fi、蓝牙</string>
-    <string name="check_nfc_status">检查 NFC 状态</string>
-    <string name="scan_a_tag">请扫描 NFC 标签</string>
-    <string name="display_content">标签内容将在此显示</string>
-    <string name="nfc_not_supported">当前设备不支持 NFC</string>
-    <string name="nfc_not_enabled">NFC 未开启，请前往设置开启</string>
-    <string name="open_settings">去设置</string>
-    <string name="nfc_ready">NFC 功能已准备就绪</string>
+    <string name="app_subtitle">基于 NFC 的多模式通信实践开发</string>
+    <string name="app_title">基于 NFC 的多模式通信实践</string>
+    <string name="version_label">版本: 20260629</string>
 
-    <!--WriteCardScreen-->
-    <string name="write_title">写入 NFC 标签</string>
-    <string name="input_hint">输入网址或文本内容</string>
-    <string name="write_uri">写入网址</string>
-    <string name="write_text">写入文本</string>
-    <string name="write_wifi">写入 Wi-Fi</string>
-    <string name="please_input_uri">请输入网址内容</string>
-    <string name="please_input_text">请输入文本内容</string>
-    <string name="please_input_wifi">请输入 Wi-Fi 内容</string>
+    <!-- ================================================================== -->
+    <!-- 底部导航栏                                                           -->
+    <!-- ================================================================== -->
+    <string name="nav_read">读卡</string>
+    <string name="nav_write">写卡/卡模拟</string>
+    <string name="nav_p2p">端对端</string>
 
-    <string name="switch1">切换开关</string>
-    <string name="snackbar1">按钮已点击</string>
-    <string name="NFCNA">该设备不支持 NFC 功能</string>
-    <string name="NFCSP">该设备已启用 NFC 功能</string>
-    <string name="exit">退出</string>
-    <string name="enable_NFC">请先在设置中启用 NFC 功能</string>
-    <string name="gotoSettings">去启用</string>
-    <string name="scanATag">扫描一个 NFC 标签以显示内容</string>
-    <string name="scannedTag">该 NFC 标签的类型：%1$s</string>
-    <string name="displayContent">标签中的记录内容将在此处显示</string>
-    <string name="notSupport">暂未支持此类型</string>
-    <string name="scanned">扫描到 NFC 标签</string>
-    <string name="title_activity_write_card">写卡</string>
-    <string name="goto_write_card">跳转到写卡</string>
-    <string name="goto_read_card">跳转到读卡</string>
-    <string name="text_to_write">在此处键入想要写入卡片的文本</string>
-    <string name="button_to_write">写入</string>
-    <string name="text_type">[文本] %1$s\n</string>
-    <string name="uri_type">[链接] %1$s\n</string>
-    <string name="app_type">[应用] %1$s\n</string>
-    <string name="wifi_type">[Wi-Fi] %1$s\n</string>
-    <string name="bluetooth_type">[蓝牙] %1$s\n</string>
-    <string name="unknown_type">[未知] %1$s\n</string>
-    <string name="ssid">SSID：%1$s</string>
-    <string name="wifi_password">密码：%1$s\n</string>
-    <string name="bluetooth_device_name">蓝牙设备名称：%1$s\n</string>
-    <string name="bluetooth_mac">蓝牙设备 MAC 地址：%1$s\n</string>
-    <string name="parse_error">解析错误</string>
-    <string name="input_text_hint">请输入要写入的内容</string>
-    <string name="scan_prompt">扫描结果：</string>
-    <string name="no_content">尚未扫描到内容</string>
-    <string name="scan_button">扫描NFC标签</string>
-    <string name="write_mode">切换到写入模式</string>
+    <!-- ================================================================== -->
+    <!-- 通用按钮                                                             -->
+    <!-- ================================================================== -->
+    <string name="button_cancel">取消</string>
+    <string name="button_exit">退出</string>
+    <string name="button_open_settings">去设置</string>
+    <string name="button_grant_permission">授予权限</string>
 
+    <!-- ================================================================== -->
+    <!-- 读卡页                                                               -->
+    <!-- ================================================================== -->
+    <string name="reader_title">读取 NFC 标签</string>
+    <string name="reader_check_nfc">检查 NFC 状态</string>
+    <string name="reader_scan_hint">请扫描 NFC 标签</string>
+    <string name="reader_display_hint">标签内容将在此显示</string>
+    <string name="reader_supported_formats">支持的格式：文本、URI、Wi-Fi、蓝牙</string>
 
-    <string name="write_button">写入标签</string>
-    <string name="back_to_read">返回读卡</string>
-    <string name="nfc_reader_title">基于 NFC 的多模式通信实践</string>
+    <string name="msg_nfc_available">该设备已启用 NFC 功能</string>
+    <string name="msg_nfc_unavailable">该设备不支持 NFC 功能</string>
+    <string name="msg_nfc_not_enabled">请先在设置中启用 NFC 功能</string>
+    <string name="msg_nfc_ready">NFC 功能已准备就绪</string>
+    <string name="msg_device_no_nfc">设备不支持NFC</string>
+    <string name="msg_no_tag_found">未发现NFC标签</string>
+    <string name="msg_read_failed">读取标签失败</string>
+    <string name="msg_parse_error">解析错误</string>
+    <string name="msg_invalid_uri">无效URI</string>
+    <string name="msg_unsupported_type">暂未支持此类型</string>
+    <string name="msg_unknown">未知</string>
+    <string name="msg_unknown_well_known">未知Well Known类型</string>
+    <string name="msg_unknown_app">未知应用</string>
+    <string name="msg_infrastructure">基础设施</string>
+    <string name="msg_independent">独立</string>
+    <string name="msg_invalid_bt_data">无效蓝牙数据（长度不足）</string>
+    <string name="msg_encryption_data_short">加密类型: 数据不足</string>
+    <string name="msg_auth_data_short">身份验证类型: 数据不足</string>
+    <string name="msg_hce_tag">HCE 模拟卡</string>
 
-    <string name="goto_write_card2">写入标签</string>
-    <string name="format_hint_url">网址格式: http://或https://开头</string>
-    <string name="format_hint_text">文本格式: 直接输入文字内容</string>
-    <string name="supported_formats_title">支持的写入格式:</string>
-    <string name="format_url">• 网址(自动识别http/https)</string>
-    <string name="format_text">• 普通文本</string>
-    <string name="back_button">返回读取界面</string>
-    <string name="servicedesc">My Application HCE Service</string>
-    <string name="aiddesc">Application AID Group</string>
-    <string name="title_activity_card_emulation_device">CardEmulationDeviceActivity</string>
+    <!-- 读卡 - 格式化 -->
+    <string name="format_tag_info">该 NFC 标签的类型：%1$s</string>
+    <string name="format_record_text">文本: %1$s</string>
+    <string name="format_record_uri">URI: %1$s</string>
+    <string name="format_record_wifi">WiFi配置:\n%1$s</string>
+    <string name="format_record_bluetooth">蓝牙配置:\n%1$s</string>
+    <string name="format_record_mime">MIME类型: %1$s\n内容: %2$s</string>
+    <string name="format_record_app">应用: %1$s</string>
+    <string name="format_record_external">外部类型: %1$s</string>
+    <string name="format_record_unknown">未知类型: %1$s</string>
+    <string name="format_ssid">SSID: %1$s</string>
+    <string name="format_wifi_password">密码: %1$s</string>
+    <string name="format_encryption_type">加密类型: %1$s</string>
+    <string name="format_auth_type">身份验证类型: %1$s</string>
+    <string name="format_mac_address">MAC地址: %1$s</string>
+    <string name="format_network_type">网络类型: %1$s</string>
+    <string name="format_reserved_type">保留/自定义（0x%1$s）</string>
+    <string name="format_unknown_field">未知字段: 0x%1$s 数据: %2$s</string>
+    <string name="format_bt_uri_record">MAC: %1$s\n名称: %2$s\n原始字节: %3$s</string>
+    <string name="format_bt_raw_record">MAC: %1$s\n名称: %2$s</string>
+    <string name="format_bt_device_name">蓝牙设备名称：%1$s</string>
+    <string name="format_bt_mac">蓝牙设备 MAC 地址：%1$s</string>
+    <string name="format_unknown_auth">未知（0x%1$04X）</string>
+    <string name="format_unknown_encryption">未知（0x%1$04X）</string>
 
+    <!-- ================================================================== -->
+    <!-- 写卡页                                                               -->
+    <!-- ================================================================== -->
+    <string name="title_write_card">写入 NFC 标签</string>
+    <string name="title_write_activity">写卡</string>
+    <string name="button_write_tag">写入标签</string>
+    <string name="button_card_emulation">卡模拟</string>
 
+    <!-- 写卡 - 数据类型 -->
+    <string name="data_type_text">文本</string>
+    <string name="data_type_url">网址</string>
+    <string name="data_type_wifi">Wi-Fi</string>
+    <string name="data_type_bluetooth">蓝牙</string>
+
+    <!-- 写卡 - 输入标签 -->
+    <string name="label_text_content">输入文本内容</string>
+    <string name="label_url_input">输入网址</string>
+    <string name="label_wifi_ssid">Wi-Fi 名称（SSID）</string>
+    <string name="label_wifi_password">密码</string>
+    <string name="label_encryption_type">加密类型</string>
+    <string name="label_auth_type">认证类型</string>
+    <string name="label_bt_mac">蓝牙 MAC 地址</string>
+    <string name="label_bt_name">设备名称（可选）</string>
+
+    <!-- 写卡 - 提示文本 -->
+    <string name="hint_text_format">格式：直接输入文字内容</string>
+    <string name="hint_url_format">格式：http:// 或 https:// 开头</string>
+    <string name="hint_bt_format">写入蓝牙 OOB 配对数据</string>
+
+    <!-- 写卡 - 占位符 -->
+    <string name="placeholder_url_example">https://www.example.com</string>
+    <string name="placeholder_bt_mac">AA:BB:CC:DD:EE:FF</string>
+    <string name="placeholder_bt_name">My Device</string>
+
+    <!-- 写卡 - 状态与错误 -->
+    <string name="error_text_blank">请输入文本内容</string>
+    <string name="error_url_blank">请输入网址</string>
+    <string name="error_wifi_ssid_blank">请输入 Wi-Fi 名称</string>
+    <string name="error_bt_mac_blank">请输入蓝牙 MAC 地址</string>
+    <string name="error_content_blank">请输入内容</string>
+    <string name="status_tap_card">请将卡靠近设备背面…</string>
+    <string name="status_writing">正在写入…</string>
+    <string name="status_write_success">写入成功</string>
+    <string name="status_write_failed">写入失败: %1$s</string>
+
+    <string name="msg_tag_not_ndef">该标签不支持 NDEF 或无法格式化</string>
+    <string name="msg_tag_not_writable">标签不可写</string>
+    <string name="msg_content_too_large">内容超出标签容量</string>
+    <string name="msg_tag_no_ndef_write">标签不支持NDEF写入</string>
+    <string name="msg_cannot_format_tag">无法格式化标签</string>
+    <string name="format_type_label">类型：%1$s</string>
+
+    <!-- ================================================================== -->
+    <!-- 卡模拟弹窗                                                           -->
+    <!-- ================================================================== -->
+    <string name="dialog_tap_card">请将卡靠近设备背面…</string>
+    <string name="dialog_writing">正在写入…</string>
+    <string name="dialog_write_success">写入成功</string>
+    <string name="dialog_write_failed">写入失败</string>
+    <string name="dialog_emulation_started">卡模拟模式已启动</string>
+    <string name="dialog_approach_reader">请将手机靠近读卡器</string>
+    <string name="dialog_button_stop_emulation">停止模拟</string>
+
+    <!-- ================================================================== -->
+    <!-- Wi-Fi / 蓝牙 认证与加密名称                                          -->
+    <!-- ================================================================== -->
+    <!-- 认证类型（parse 显示用） -->
+    <string name="auth_open_system">Open System</string>
+    <string name="auth_wpa_psk">WPA-PSK</string>
+    <string name="auth_shared_key">Shared Key</string>
+    <string name="auth_wpa_eap">WPA-EAP</string>
+    <string name="auth_wpa2_eap">WPA2-EAP</string>
+    <string name="auth_wpa2_psk">WPA2-PSK</string>
+    <string name="auth_wpa3_sae">WPA3-SAE</string>
+
+    <!-- 加密类型（parse 显示用） -->
+    <string name="enc_none">无</string>
+    <string name="enc_wep">WEP</string>
+    <string name="enc_tkip">TKIP</string>
+    <string name="enc_aes">AES</string>
+    <string name="enc_aes_tkip">AES/TKIP</string>
+
+    <!-- 加密类型（UI 下拉框用） -->
+    <string name="encryption_none">无</string>
+    <string name="encryption_wep">WEP</string>
+    <string name="encryption_wpa_tkip">WPA (TKIP)</string>
+    <string name="encryption_wpa2_aes">WPA2 (AES)</string>
+    <string name="encryption_wpa3_sae">WPA3 (SAE)</string>
+
+    <!-- 认证类型（UI 下拉框用） -->
+    <string name="auth_open">开放</string>
+    <string name="auth_wpa_psk_short">WPA-PSK</string>
+    <string name="auth_wpa2_psk_short">WPA2-PSK</string>
+    <string name="auth_wpa3_sae_short">WPA3-SAE</string>
+
+    <!-- ================================================================== -->
+    <!-- HCE 服务                                                             -->
+    <!-- ================================================================== -->
+    <string name="hce_service_desc">NFC 多模式通信 - 卡模拟服务</string>
+    <string name="hce_aid_desc">NFC 标签模拟（文本/网址/Wi-Fi/蓝牙）</string>
+    <string name="title_card_emulation_activity">CardEmulationDeviceActivity</string>
+
+    <!-- ================================================================== -->
+    <!-- P2P 端对端                                                           -->
+    <!-- ================================================================== -->
+    <string name="p2p_title">NFC P2P通信</string>
+    <string name="p2p_device_name">P2P Device</string>
+    <string name="p2p_text_nfc_disabled">NFC功能未启用</string>
+    <string name="p2p_button_enable_nfc">启用NFC</string>
+    <string name="p2p_label_select_mode">选择连接模式</string>
+    <string name="p2p_button_discover">用户 1</string>
+    <string name="p2p_button_advertise">用户 2</string>
+    <string name="p2p_text_waiting_reader">正在等待读取器扫描…</string>
+    <string name="p2p_button_stop_advertise">停止广播</string>
+    <string name="p2p_button_stop_discovery">停止发现</string>
+    <string name="p2p_text_approach_device">请将设备靠近另一台设备…</string>
+    <string name="p2p_text_connecting">已发现设备，正在建立近距连接…</string>
+    <string name="p2p_text_connected">已建立近距连接</string>
+    <string name="p2p_button_disconnect">断开连接</string>
+    <string name="p2p_label_received">接收到的消息</string>
+    <string name="p2p_placeholder_waiting">等待接收消息…</string>
+    <string name="p2p_label_send">发送消息</string>
+    <string name="p2p_label_message_input">输入要发送的消息</string>
+    <string name="p2p_button_send">发送</string>
+    <string name="p2p_text_beam_active">发送模式已激活 - 准备发送消息</string>
+    <string name="p2p_text_beam_instructions">使用说明：\n1. 输入消息并点击\'激活发送\'\n2. 将设备背靠背靠近另一台设备\n3. 触摸屏幕发送消息</string>
+    <string name="p2p_button_activate_beam">激活发送</string>
+    <string name="p2p_button_stop_beam">停止发送</string>
+
+    <!-- P2P - Toast / Snackbar -->
+    <string name="toast_permission_required">请先授予位置和附近设备权限</string>
+    <string name="toast_permission_granted">权限已授予</string>
+    <string name="toast_not_connected">未连接到任何设备</string>
+    <string name="toast_accepting_connection">接受连接请求中…</string>
+    <string name="toast_connection_success">连接成功！可以开始传输数据。</string>
+    <string name="toast_connection_rejected">连接被拒绝。</string>
+    <string name="toast_connection_failed">连接失败。</string>
+    <string name="toast_connection_disconnected">连接已断开。</string>
+    <string name="toast_connection_requested">已发送连接请求，等待对方接受</string>
+    <string name="toast_advertising_started">Nearby广告已启动，等待读取器发现…</string>
+    <string name="toast_advertising_stopped">广告已停止</string>
+    <string name="toast_discovery_started">Nearby发现已启动，正在扫描附近设备…</string>
+    <string name="toast_message_sent">消息发送成功</string>
+    <string name="toast_beam_message_sent">消息已发送</string>
+    <string name="toast_new_message_received">收到新消息</string>
+    <string name="toast_device_no_nfc">设备不支持NFC</string>
+    <string name="toast_enable_nfc">请启用NFC功能</string>
+    <string name="toast_tag_not_ndef">标签不支持NDEF格式</string>
+    <string name="toast_write_success">写入成功</string>
+    <string name="toast_hce_no_nfc">此设备不支持NFC</string>
+    <string name="toast_hce_enable_nfc">请先在系统设置中启用NFC</string>
+    <string name="toast_hce_ready">卡片模拟已准备就绪。请将设备靠近读取器。</string>
+    <string name="toast_hce_stopped">卡片模拟已停止。</string>
+    <string name="toast_hce_nfc_off">NFC已关闭，卡片模拟可能无法工作。</string>
+
+    <!-- P2P - 格式化（Toast/Snackbar 带参数） -->
+    <string name="format_write_failed">写入失败: %1$s</string>
+    <string name="format_advertising_failed">广告启动失败: %1$s</string>
+    <string name="format_discovery_failed">发现启动失败: %1$s</string>
+    <string name="format_message_send_failed">消息发送失败: %1$s</string>
+    <string name="format_connection_request_failed">连接请求失败: %1$s</string>
+    <string name="format_beam_unavailable">NFC 功能不可用: %1$s</string>
+
+    <!-- P2P - 权限（UI 卡片） -->
+    <string name="p2p_text_permission_required">需要位置和附近设备权限</string>
 </resources>

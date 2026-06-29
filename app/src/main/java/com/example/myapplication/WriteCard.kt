@@ -35,7 +35,7 @@ class WriteCard : ComponentActivity() {
 
         // 初始化NFC适配器
         nfcAdapter = NfcAdapter.getDefaultAdapter(this) ?: run {
-            showToast("设备不支持NFC")
+            showToast(getString(R.string.toast_device_no_nfc))
             finish()
             return
         }
@@ -106,7 +106,7 @@ class WriteCard : ComponentActivity() {
     private fun handleTagWrite(tag: Tag?) {
         tag?.let {
             if (!isNdefCompatible(it)) {
-                showToast("标签不支持NDEF格式")
+                showToast(getString(R.string.toast_tag_not_ndef))
                 currentWriteMode = WriteMode.IDLE
                 return
             }
@@ -123,9 +123,9 @@ class WriteCard : ComponentActivity() {
                 } else {
                     formatAndWrite(it, message)
                 }
-                showToast("写入成功")
+                showToast(getString(R.string.toast_write_success))
             } catch(e: Exception) {
-                showToast("写入失败: ${e.message}")
+                showToast(getString(R.string.format_write_failed, e.message))
                 Log.e("NFC", "写入错误", e)
             } finally {
                 currentWriteMode = WriteMode.IDLE
@@ -142,16 +142,16 @@ class WriteCard : ComponentActivity() {
         NdefFormatable.get(tag)?.use { formatable ->
             formatable.connect()
             formatable.format(message)
-        } ?: throw IOException("无法格式化标签")
+        } ?: throw IOException(getString(R.string.msg_cannot_format_tag))
     }
 
     private fun writeNdefMessage(tag: Tag, message: NdefMessage) {
         Ndef.get(tag)?.use { ndef ->
             ndef.connect()
-            if (!ndef.isWritable) throw IOException("标签不可写")
-            if (ndef.maxSize < message.toByteArray().size) throw IOException("内容超出标签容量")
+            if (!ndef.isWritable) throw IOException(getString(R.string.msg_tag_not_writable))
+            if (ndef.maxSize < message.toByteArray().size) throw IOException(getString(R.string.msg_content_too_large))
             ndef.writeNdefMessage(message)
-        } ?: throw IOException("标签不支持NDEF写入")
+        } ?: throw IOException(getString(R.string.msg_tag_no_ndef_write))
     }
 
     override fun onResume() {
