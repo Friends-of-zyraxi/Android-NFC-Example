@@ -148,18 +148,20 @@ fun WriteCardScreen(
                     opened = typeExpanded,
                     onDismissRequest = { typeExpanded = false }
                 ) {
-                    WriteDataType.entries.forEach { type ->
-                        BasicText(
-                            text = stringResource(type.labelResId),
-                            style = TextStyle(fontSize = 16.sp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedType = type
-                                    typeExpanded = false
-                                }
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
-                        )
+                    Column(modifier = Modifier.width(220.dp)) {
+                        WriteDataType.entries.forEach { type ->
+                            BasicText(
+                                text = stringResource(type.labelResId),
+                                style = TextStyle(fontSize = 16.sp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedType = type
+                                        typeExpanded = false
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -226,18 +228,20 @@ fun WriteCardScreen(
                             opened = encExpanded,
                             onDismissRequest = { encExpanded = false }
                         ) {
-                            WifiEncryption.entries.forEach { enc ->
-                                BasicText(
-                                    text = stringResource(enc.displayResId),
-                                    style = TextStyle(fontSize = 16.sp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            wifiEncryption = enc
-                                            encExpanded = false
-                                        }
-                                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                                )
+                            Column(modifier = Modifier.width(220.dp)) {
+                                WifiEncryption.entries.forEach { enc ->
+                                    BasicText(
+                                        text = stringResource(enc.displayResId),
+                                        style = TextStyle(fontSize = 16.sp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                wifiEncryption = enc
+                                                encExpanded = false
+                                            }
+                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -256,18 +260,20 @@ fun WriteCardScreen(
                             opened = authExpanded,
                             onDismissRequest = { authExpanded = false }
                         ) {
-                            WifiAuth.entries.forEach { auth ->
-                                BasicText(
-                                    text = stringResource(auth.displayResId),
-                                    style = TextStyle(fontSize = 16.sp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            wifiAuth = auth
-                                            authExpanded = false
-                                        }
-                                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                                )
+                            Column(modifier = Modifier.width(220.dp)) {
+                                WifiAuth.entries.forEach { auth ->
+                                    BasicText(
+                                        text = stringResource(auth.displayResId),
+                                        style = TextStyle(fontSize = 16.sp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                wifiAuth = auth
+                                                authExpanded = false
+                                            }
+                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -357,7 +363,7 @@ fun WriteCardScreen(
                     ) {
                         when (writeState) {
                             WriteState.WAITING_FOR_CARD -> {
-                                CircularProgressIndicator(progress = 0.5f)
+                                CircularProgressIndicator()
                                 Spacer(modifier = Modifier.height(16.dp))
                                 BasicText(
                                     text = writeStatusMessage.ifEmpty { stringResource(R.string.dialog_tap_card) },
@@ -372,7 +378,7 @@ fun WriteCardScreen(
                             }
 
                             WriteState.WRITING -> {
-                                CircularProgressIndicator(progress = 0.5f)
+                                CircularProgressIndicator()
                                 Spacer(modifier = Modifier.height(16.dp))
                                 BasicText(
                                     text = stringResource(R.string.dialog_writing),
@@ -395,7 +401,7 @@ fun WriteCardScreen(
                             }
 
                             WriteState.EMULATING -> {
-                                CircularProgressIndicator(progress = 0.5f)
+                                CircularProgressIndicator()
                                 Spacer(modifier = Modifier.height(16.dp))
                                 BasicText(
                                     text = stringResource(R.string.dialog_emulation_started),

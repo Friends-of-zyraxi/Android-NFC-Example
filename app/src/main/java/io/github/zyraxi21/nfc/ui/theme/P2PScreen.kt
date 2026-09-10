@@ -196,7 +196,7 @@ fun P2PScreen(
 
                     ConnectionState.ADVERTISING -> {
                         Spacer(modifier = Modifier.height(32.dp))
-                        CircularProgressIndicator(progress = 0.5f)
+                        CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         BasicText(
                             text = stringResource(R.string.p2p_text_waiting_reader),
@@ -211,7 +211,7 @@ fun P2PScreen(
 
                     ConnectionState.DISCOVERING -> {
                         Spacer(modifier = Modifier.height(32.dp))
-                        CircularProgressIndicator(progress = 0.5f)
+                        CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         BasicText(
                             text = stringResource(R.string.p2p_text_approach_device),
@@ -226,7 +226,7 @@ fun P2PScreen(
 
                     ConnectionState.CONNECTING -> {
                         Spacer(modifier = Modifier.height(32.dp))
-                        CircularProgressIndicator(progress = 0.5f)
+                        CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         BasicText(
                             text = stringResource(R.string.p2p_text_connecting),
@@ -277,18 +277,20 @@ fun P2PScreen(
                                 opened = typeExpanded,
                                 onDismissRequest = { typeExpanded = false }
                             ) {
-                                WriteDataType.entries.forEach { type ->
-                                    BasicText(
-                                        text = stringResource(type.labelResId),
-                                        style = TextStyle(fontSize = 16.sp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                selectedType = type
-                                                typeExpanded = false
-                                            }
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                                    )
+                                Column(modifier = Modifier.width(220.dp)) {
+                                    WriteDataType.entries.forEach { type ->
+                                        BasicText(
+                                            text = stringResource(type.labelResId),
+                                            style = TextStyle(fontSize = 16.sp),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    selectedType = type
+                                                    typeExpanded = false
+                                                }
+                                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -342,18 +344,20 @@ fun P2PScreen(
                                         opened = encExpanded,
                                         onDismissRequest = { encExpanded = false }
                                     ) {
-                                        WifiEncryption.entries.forEach { enc ->
-                                            BasicText(
-                                                text = stringResource(enc.displayResId),
-                                                style = TextStyle(fontSize = 16.sp),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        wifiEncryption = enc
-                                                        encExpanded = false
-                                                    }
-                                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                                            )
+                                        Column(modifier = Modifier.width(220.dp)) {
+                                            WifiEncryption.entries.forEach { enc ->
+                                                BasicText(
+                                                    text = stringResource(enc.displayResId),
+                                                    style = TextStyle(fontSize = 16.sp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            wifiEncryption = enc
+                                                            encExpanded = false
+                                                        }
+                                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -371,18 +375,20 @@ fun P2PScreen(
                                         opened = authExpanded,
                                         onDismissRequest = { authExpanded = false }
                                     ) {
-                                        WifiAuth.entries.forEach { auth ->
-                                            BasicText(
-                                                text = stringResource(auth.displayResId),
-                                                style = TextStyle(fontSize = 16.sp),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        wifiAuth = auth
-                                                        authExpanded = false
-                                                    }
-                                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                                            )
+                                        Column(modifier = Modifier.width(220.dp)) {
+                                            WifiAuth.entries.forEach { auth ->
+                                                BasicText(
+                                                    text = stringResource(auth.displayResId),
+                                                    style = TextStyle(fontSize = 16.sp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            wifiAuth = auth
+                                                            authExpanded = false
+                                                        }
+                                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }

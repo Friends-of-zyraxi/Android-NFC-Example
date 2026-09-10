@@ -1,10 +1,7 @@
 package io.github.zyraxi21.nfc.ui.theme
 
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicText
@@ -24,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -76,10 +74,12 @@ fun BottomNavigationApp(
         )
     }
 
+    val isDark = isSystemInDarkTheme()
     Scaffold(
+        containerColor = if (isDark) Color(0xFF1B1A19) else Color(0xFFF3F2F1),
         snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } },
         topBar = {
-            Column {
+            Column(modifier = Modifier.statusBarsPadding()) {
                 AppBar(
                     title = stringResource(R.string.app_title),
                     centerAlignAppBar = true
@@ -94,10 +94,12 @@ fun BottomNavigationApp(
             }
         },
         bottomBar = {
-            TabBar(
-                tabDataList = tabDataList,
-                selectedIndex = selectedItemIndex
-            )
+            Column(modifier = Modifier.navigationBarsPadding()) {
+                TabBar(
+                    tabDataList = tabDataList,
+                    selectedIndex = selectedItemIndex
+                )
+            }
         }
     ) { innerPadding ->
         BoxWithConstraints(
