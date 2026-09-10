@@ -4,19 +4,28 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.microsoft.fluentui.tokenized.controls.BasicCard
+import com.microsoft.fluentui.tokenized.controls.Button
+import com.microsoft.fluentui.tokenized.controls.TextField
+import com.microsoft.fluentui.tokenized.menu.Menu
+import com.microsoft.fluentui.tokenized.progress.CircularProgressIndicator
+import com.microsoft.fluentui.theme.token.controlTokens.ButtonStyle
 import io.github.zyraxi21.nfc.R
 
 // =======================================================================
@@ -63,7 +72,6 @@ enum class WifiAuth(val displayResId: Int, val wscValue: Int) {
 // =======================================================================
 // 统一的写卡界面
 // =======================================================================
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WriteCardScreen(
     writeState: WriteState,
@@ -121,32 +129,36 @@ fun WriteCardScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // ---- 标题 ----
-            Text(
+            BasicText(
                 text = stringResource(R.string.title_write_card),
-                fontSize = 20.sp,
+                style = TextStyle(fontSize = 20.sp),
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
             // ---- 类型选择下拉框 ----
             var typeExpanded by remember { mutableStateOf(false) }
             Box {
-                OutlinedButton(
+                Button(
                     onClick = { typeExpanded = true },
+                    style = ButtonStyle.OutlinedButton,
+                    text = stringResource(R.string.format_type_label, stringResource(selectedType.labelResId)),
                     modifier = Modifier.fillMaxWidth(0.85f)
-                ) {
-                    Text(stringResource(R.string.format_type_label, stringResource(selectedType.labelResId)))
-                }
-                DropdownMenu(
-                    expanded = typeExpanded,
+                )
+                Menu(
+                    opened = typeExpanded,
                     onDismissRequest = { typeExpanded = false }
                 ) {
                     WriteDataType.entries.forEach { type ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(type.labelResId)) },
-                            onClick = {
-                                selectedType = type
-                                typeExpanded = false
-                            }
+                        BasicText(
+                            text = stringResource(type.labelResId),
+                            style = TextStyle(fontSize = 16.sp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedType = type
+                                    typeExpanded = false
+                                }
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
                         )
                     }
                 }
@@ -157,112 +169,104 @@ fun WriteCardScreen(
             // ---- 动态输入区域 ----
             when (selectedType) {
                 WriteDataType.TEXT -> {
-                    OutlinedTextField(
+                    TextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        label = { Text(stringResource(R.string.label_text_content)) },
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        minLines = 3
+                        label = stringResource(R.string.label_text_content),
+                        modifier = Modifier.fillMaxWidth(0.85f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
+                    BasicText(
                         text = stringResource(R.string.hint_text_format),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = TextStyle(fontSize = 12.sp, color = Color.Gray)
                     )
                 }
 
                 WriteDataType.URL -> {
-                    OutlinedTextField(
+                    TextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        label = { Text(stringResource(R.string.label_url_input)) },
-                        placeholder = { Text(stringResource(R.string.placeholder_url_example)) },
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        singleLine = true
+                        label = stringResource(R.string.label_url_input),
+                        hintText = stringResource(R.string.placeholder_url_example),
+                        modifier = Modifier.fillMaxWidth(0.85f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
+                    BasicText(
                         text = stringResource(R.string.hint_url_format),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = TextStyle(fontSize = 12.sp, color = Color.Gray)
                     )
                 }
 
                 WriteDataType.WIFI -> {
-                    OutlinedTextField(
+                    TextField(
                         value = wifiSsid,
                         onValueChange = { wifiSsid = it },
-                        label = { Text(stringResource(R.string.label_wifi_ssid)) },
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        singleLine = true
+                        label = stringResource(R.string.label_wifi_ssid),
+                        modifier = Modifier.fillMaxWidth(0.85f)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
+                    TextField(
                         value = wifiPassword,
                         onValueChange = { wifiPassword = it },
-                        label = { Text(stringResource(R.string.label_wifi_password)) },
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        singleLine = true
+                        label = stringResource(R.string.label_wifi_password),
+                        modifier = Modifier.fillMaxWidth(0.85f)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // 加密类型下拉
                     var encExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = encExpanded,
-                        onExpandedChange = { encExpanded = it },
-                        modifier = Modifier.fillMaxWidth(0.85f)
-                    ) {
-                        OutlinedTextField(
-                            value = stringResource(wifiEncryption.displayResId),
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.label_encryption_type)) },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = encExpanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                    Box(modifier = Modifier.fillMaxWidth(0.85f)) {
+                        Button(
+                            onClick = { encExpanded = true },
+                            style = ButtonStyle.OutlinedButton,
+                            text = stringResource(R.string.label_encryption_type) + ": " + stringResource(wifiEncryption.displayResId),
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        ExposedDropdownMenu(
-                            expanded = encExpanded,
+                        Menu(
+                            opened = encExpanded,
                             onDismissRequest = { encExpanded = false }
                         ) {
                             WifiEncryption.entries.forEach { enc ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(enc.displayResId)) },
-                                    onClick = {
-                                        wifiEncryption = enc
-                                        encExpanded = false
-                                    }
+                                BasicText(
+                                    text = stringResource(enc.displayResId),
+                                    style = TextStyle(fontSize = 16.sp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            wifiEncryption = enc
+                                            encExpanded = false
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 12.dp)
                                 )
                             }
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // 认证类型下拉
                     var authExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = authExpanded,
-                        onExpandedChange = { authExpanded = it },
-                        modifier = Modifier.fillMaxWidth(0.85f)
-                    ) {
-                        OutlinedTextField(
-                            value = stringResource(wifiAuth.displayResId),
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.label_auth_type)) },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = authExpanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                    Box(modifier = Modifier.fillMaxWidth(0.85f)) {
+                        Button(
+                            onClick = { authExpanded = true },
+                            style = ButtonStyle.OutlinedButton,
+                            text = stringResource(R.string.label_auth_type) + ": " + stringResource(wifiAuth.displayResId),
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        ExposedDropdownMenu(
-                            expanded = authExpanded,
+                        Menu(
+                            opened = authExpanded,
                             onDismissRequest = { authExpanded = false }
                         ) {
                             WifiAuth.entries.forEach { auth ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(auth.displayResId)) },
-                                    onClick = {
-                                        wifiAuth = auth
-                                        authExpanded = false
-                                    }
+                                BasicText(
+                                    text = stringResource(auth.displayResId),
+                                    style = TextStyle(fontSize = 16.sp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            wifiAuth = auth
+                                            authExpanded = false
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 12.dp)
                                 )
                             }
                         }
@@ -270,28 +274,25 @@ fun WriteCardScreen(
                 }
 
                 WriteDataType.BLUETOOTH -> {
-                    OutlinedTextField(
+                    TextField(
                         value = btMac,
                         onValueChange = { btMac = it },
-                        label = { Text(stringResource(R.string.label_bt_mac)) },
-                        placeholder = { Text(stringResource(R.string.placeholder_bt_mac)) },
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        singleLine = true
+                        label = stringResource(R.string.label_bt_mac),
+                        hintText = stringResource(R.string.placeholder_bt_mac),
+                        modifier = Modifier.fillMaxWidth(0.85f)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
+                    TextField(
                         value = btName,
                         onValueChange = { btName = it },
-                        label = { Text(stringResource(R.string.label_bt_name)) },
-                        placeholder = { Text(stringResource(R.string.placeholder_bt_name)) },
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        singleLine = true
+                        label = stringResource(R.string.label_bt_name),
+                        hintText = stringResource(R.string.placeholder_bt_name),
+                        modifier = Modifier.fillMaxWidth(0.85f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
+                    BasicText(
                         text = stringResource(R.string.hint_bt_format),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = TextStyle(fontSize = 12.sp, color = Color.Gray)
                     )
                 }
             }
@@ -312,11 +313,10 @@ fun WriteCardScreen(
                             WriteDataType.BLUETOOTH -> onWriteBluetooth(btMac, btName)
                         }
                     },
-                    modifier = Modifier.weight(1f),
-                    enabled = writeState == WriteState.IDLE
-                ) {
-                    Text(stringResource(R.string.button_write_tag))
-                }
+                    text = stringResource(R.string.button_write_tag),
+                    enabled = writeState == WriteState.IDLE,
+                    modifier = Modifier.weight(1f)
+                )
 
                 Button(
                     onClick = {
@@ -326,11 +326,10 @@ fun WriteCardScreen(
                             btMac, btName
                         )
                     },
-                    modifier = Modifier.weight(1f),
-                    enabled = writeState == WriteState.IDLE
-                ) {
-                    Text(stringResource(R.string.button_card_emulation))
-                }
+                    text = stringResource(R.string.button_card_emulation),
+                    enabled = writeState == WriteState.IDLE,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
@@ -345,11 +344,10 @@ fun WriteCardScreen(
                     dismissOnClickOutside = false
                 )
             ) {
-                Card(
+                BasicCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    elevation = CardDefaults.cardElevation(8.dp)
+                        .padding(16.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -359,65 +357,61 @@ fun WriteCardScreen(
                     ) {
                         when (writeState) {
                             WriteState.WAITING_FOR_CARD -> {
-                                CircularProgressIndicator()
+                                CircularProgressIndicator(progress = 0.5f)
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text(
+                                BasicText(
                                     text = writeStatusMessage.ifEmpty { stringResource(R.string.dialog_tap_card) },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
+                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                TextButton(onClick = onCancelWrite) {
-                                    Text(stringResource(R.string.button_cancel))
-                                }
+                                Button(
+                                    onClick = onCancelWrite,
+                                    style = ButtonStyle.TextButton,
+                                    text = stringResource(R.string.button_cancel)
+                                )
                             }
 
                             WriteState.WRITING -> {
-                                CircularProgressIndicator()
+                                CircularProgressIndicator(progress = 0.5f)
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text(
+                                BasicText(
                                     text = stringResource(R.string.dialog_writing),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
+                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
                                 )
                             }
 
                             WriteState.SUCCESS -> {
-                                Text(
+                                BasicText(
                                     text = writeStatusMessage.ifEmpty { stringResource(R.string.dialog_write_success) },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
+                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
                                 )
                             }
 
                             WriteState.FAILED -> {
-                                Text(
+                                BasicText(
                                     text = writeStatusMessage.ifEmpty { stringResource(R.string.dialog_write_failed) },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.error,
-                                    textAlign = TextAlign.Center
+                                    style = TextStyle(fontSize = 16.sp, color = Color.Red, textAlign = TextAlign.Center)
                                 )
                             }
 
                             WriteState.EMULATING -> {
-                                CircularProgressIndicator()
+                                CircularProgressIndicator(progress = 0.5f)
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text(
+                                BasicText(
                                     text = stringResource(R.string.dialog_emulation_started),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
+                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text(
+                                BasicText(
                                     text = stringResource(R.string.dialog_approach_reader),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
+                                    style = TextStyle(fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                TextButton(onClick = onCancelWrite) {
-                                    Text(stringResource(R.string.dialog_button_stop_emulation))
-                                }
+                                Button(
+                                    onClick = onCancelWrite,
+                                    style = ButtonStyle.TextButton,
+                                    text = stringResource(R.string.dialog_button_stop_emulation)
+                                )
                             }
 
                             WriteState.IDLE -> { /* unreachable */ }

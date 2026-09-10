@@ -1,16 +1,22 @@
 package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.microsoft.fluentui.tokenized.controls.BasicCard
+import com.microsoft.fluentui.tokenized.controls.Button
 import io.github.zyraxi21.nfc.R
 import io.github.zyraxi21.nfc.util.checkNfcAvailability
 import kotlinx.coroutines.launch
@@ -57,9 +63,9 @@ fun NFCReaderScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
+        BasicText(
             text = stringResource(R.string.reader_title),
-            fontSize = 20.sp,
+            style = TextStyle(fontSize = 20.sp),
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .align(Alignment.CenterHorizontally)
@@ -70,47 +76,41 @@ fun NFCReaderScreen(
         if (isButtonVisible) {
             Button(
                 onClick = onCheckNfcClick,
+                text = stringResource(R.string.reader_check_nfc),
                 modifier = Modifier
                     .fillMaxWidth(0.6f)
                     .padding(top = 16.dp)
                     .align(Alignment.CenterHorizontally)
-            ) {
-                Text(text = stringResource(R.string.reader_check_nfc))
-            }
+            )
         }
 
-        Text(
+        BasicText(
             text = stringResource(R.string.reader_supported_formats),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            textAlign = TextAlign.Center,
+            style = TextStyle(fontSize = 12.sp, color = Color.Gray),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp)
         )
 
-        Text(
+        BasicText(
             text = tagInfo.ifEmpty { stringResource(R.string.reader_scan_hint) },
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
+            style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center),
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .padding(top = 16.dp)
                 .align(Alignment.CenterHorizontally)
         )
 
-        Card(
+        BasicCard(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .weight(1f)
                 .padding(vertical = 16.dp)
-                .align(Alignment.CenterHorizontally),
-            elevation = CardDefaults.cardElevation(4.dp)
+                .align(Alignment.CenterHorizontally)
         ) {
-            Text(
+            BasicText(
                 text = tagContent.ifEmpty { stringResource(R.string.reader_display_hint) },
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
+                style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center),
                 modifier = Modifier
                     .padding(12.dp)
                     .wrapContentSize(Alignment.Center)

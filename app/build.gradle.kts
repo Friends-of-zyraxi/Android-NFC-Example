@@ -71,6 +71,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    // Fluent 内部依赖 material（Material 2 Compose）的 rememberRipple
+    implementation("androidx.compose.material:material")
     implementation(libs.androidx.constraintlayout.compose)
 
     // Nearby Connections
@@ -86,4 +88,14 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
+
+    // Fluent Design：按需引入模块化依赖（版本对齐源码仓库 config.gradle）
+    implementation("com.microsoft.fluentui:fluentui_core:0.3.11")
+    implementation("com.microsoft.fluentui:fluentui_controls:0.3.3")
+    implementation("com.microsoft.fluentui:fluentui_progress:0.3.7")
+    implementation("com.microsoft.fluentui:fluentui_topappbars:0.3.9")
+    implementation("com.microsoft.fluentui:fluentui_tablayout:0.3.5")
+    implementation("com.microsoft.fluentui:fluentui_notification:0.3.10")
+    implementation("com.microsoft.fluentui:fluentui_menus:0.3.5")
+    implementation("com.microsoft.fluentui:fluentui_listitem:0.3.7")
 }

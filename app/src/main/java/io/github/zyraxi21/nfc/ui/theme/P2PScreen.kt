@@ -1,20 +1,27 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.microsoft.fluentui.theme.token.controlTokens.ButtonStyle
+import com.microsoft.fluentui.tokenized.controls.BasicCard
+import com.microsoft.fluentui.tokenized.controls.Button
+import com.microsoft.fluentui.tokenized.controls.TextField
+import com.microsoft.fluentui.tokenized.menu.Menu
+import com.microsoft.fluentui.tokenized.progress.CircularProgressIndicator
 import io.github.zyraxi21.nfc.R
 
 enum class ConnectionState {
@@ -86,11 +93,10 @@ fun P2PScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Card(
+                BasicCard(
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
-                        .padding(16.dp),
-                    elevation = CardDefaults.cardElevation(8.dp)
+                        .padding(16.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -98,15 +104,15 @@ fun P2PScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
+                        BasicText(
                             text = stringResource(R.string.p2p_text_permission_required),
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
+                            style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onRequestPermissions) {
-                            Text(stringResource(R.string.button_grant_permission))
-                        }
+                        Button(
+                            onClick = onRequestPermissions,
+                            text = stringResource(R.string.button_grant_permission)
+                        )
                     }
                 }
             }
@@ -120,28 +126,26 @@ fun P2PScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 标题
-                Text(
+                BasicText(
                     text = stringResource(R.string.p2p_title),
-                    style = MaterialTheme.typography.headlineLarge,
+                    style = TextStyle(fontSize = 24.sp),
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
                 // Nearby 无线装置引导：API 不再自动开启蓝牙 / Wi-Fi
                 nearbyRadioWarning?.let { message ->
-                    Card(
+                    BasicCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
+                            .padding(bottom = 16.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
+                            BasicText(
                                 text = message,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center
+                                style = TextStyle(fontSize = 14.sp, color = Color.Red, textAlign = TextAlign.Center)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(
@@ -149,14 +153,16 @@ fun P2PScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 if (!isBluetoothEnabled) {
-                                    Button(onClick = onEnableBluetooth) {
-                                        Text(stringResource(R.string.p2p_button_enable_bluetooth))
-                                    }
+                                    Button(
+                                        onClick = onEnableBluetooth,
+                                        text = stringResource(R.string.p2p_button_enable_bluetooth)
+                                    )
                                 }
                                 if (!isWiFiEnabled) {
-                                    Button(onClick = onEnableWiFi) {
-                                        Text(stringResource(R.string.p2p_button_enable_wifi))
-                                    }
+                                    Button(
+                                        onClick = onEnableWiFi,
+                                        text = stringResource(R.string.p2p_button_enable_wifi)
+                                    )
                                 }
                             }
                         }
@@ -167,270 +173,271 @@ fun P2PScreen(
                 // 根据连接状态展示不同内容
                 // ========================================================
                 when (connectionState) {
-                        ConnectionState.DISCONNECTED -> {
-                            Text(
-                                text = stringResource(R.string.p2p_label_select_mode),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Button(onClick = onStartDiscovery) {
-                                    Text(stringResource(R.string.p2p_button_discover))
-                                }
-                                Button(onClick = onStartAdvertising) {
-                                    Text(stringResource(R.string.p2p_button_advertise))
-                                }
-                            }
-                        }
-
-                        ConnectionState.ADVERTISING -> {
-                            Spacer(modifier = Modifier.height(32.dp))
-                            CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.p2p_text_waiting_reader),
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = onStopAdvertising) {
-                                Text(stringResource(R.string.p2p_button_stop_advertise))
-                            }
-                        }
-
-                        ConnectionState.DISCOVERING -> {
-                            Spacer(modifier = Modifier.height(32.dp))
-                            CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.p2p_text_approach_device),
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = onStopDiscovery) {
-                                Text(stringResource(R.string.p2p_button_stop_discovery))
-                            }
-                        }
-
-                        ConnectionState.CONNECTING -> {
-                            Spacer(modifier = Modifier.height(32.dp))
-                            CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.p2p_text_connecting),
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                        ConnectionState.CONNECTED -> {
-                            Text(
-                                text = stringResource(R.string.p2p_text_connected),
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
-
-                            // ---- 接收消息区域 ----
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 12.dp),
-                                elevation = CardDefaults.cardElevation(8.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = stringResource(R.string.p2p_label_received),
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    if (receivedNearbyMessage.isEmpty()) {
-                                        Text(
-                                            text = stringResource(R.string.p2p_placeholder_waiting),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    } else {
-                                        ParsedMessageDisplay(receivedNearbyMessage)
-                                    }
-                                }
-                            }
-
-                            // ---- 类型选择 ----
-                            var typeExpanded by remember { mutableStateOf(false) }
-                            Box(modifier = Modifier.fillMaxWidth(0.85f)) {
-                                OutlinedButton(
-                                    onClick = { typeExpanded = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(stringResource(R.string.format_type_label, stringResource(selectedType.labelResId)))
-                                }
-                                DropdownMenu(
-                                    expanded = typeExpanded,
-                                    onDismissRequest = { typeExpanded = false }
-                                ) {
-                                    WriteDataType.entries.forEach { type ->
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(type.labelResId)) },
-                                            onClick = { selectedType = type; typeExpanded = false }
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // ---- 动态输入区 ----
-                            when (selectedType) {
-                                WriteDataType.TEXT -> {
-                                    OutlinedTextField(
-                                        value = textInput,
-                                        onValueChange = { textInput = it },
-                                        label = { Text(stringResource(R.string.label_text_content)) },
-                                        modifier = Modifier.fillMaxWidth(0.85f),
-                                        minLines = 2
-                                    )
-                                }
-                                WriteDataType.URL -> {
-                                    OutlinedTextField(
-                                        value = textInput,
-                                        onValueChange = { textInput = it },
-                                        label = { Text(stringResource(R.string.label_url_input)) },
-                                        placeholder = { Text(stringResource(R.string.placeholder_url_example)) },
-                                        modifier = Modifier.fillMaxWidth(0.85f),
-                                        singleLine = true
-                                    )
-                                }
-                                WriteDataType.WIFI -> {
-                                    OutlinedTextField(
-                                        value = wifiSsid,
-                                        onValueChange = { wifiSsid = it },
-                                        label = { Text(stringResource(R.string.label_wifi_ssid)) },
-                                        modifier = Modifier.fillMaxWidth(0.85f),
-                                        singleLine = true
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = wifiPassword,
-                                        onValueChange = { wifiPassword = it },
-                                        label = { Text(stringResource(R.string.label_wifi_password)) },
-                                        modifier = Modifier.fillMaxWidth(0.85f),
-                                        singleLine = true
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    var encExpanded by remember { mutableStateOf(false) }
-                                    ExposedDropdownMenuBox(
-                                        expanded = encExpanded,
-                                        onExpandedChange = { encExpanded = it },
-                                        modifier = Modifier.fillMaxWidth(0.85f)
-                                    ) {
-                                        OutlinedTextField(
-                                            value = stringResource(wifiEncryption.displayResId),
-                                            onValueChange = {},
-                                            readOnly = true,
-                                            label = { Text(stringResource(R.string.label_encryption_type)) },
-                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = encExpanded) },
-                                            modifier = Modifier.fillMaxWidth().menuAnchor()
-                                        )
-                                        ExposedDropdownMenu(
-                                            expanded = encExpanded,
-                                            onDismissRequest = { encExpanded = false }
-                                        ) {
-                                            WifiEncryption.entries.forEach { enc ->
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(enc.displayResId)) },
-                                                    onClick = { wifiEncryption = enc; encExpanded = false }
-                                                )
-                                            }
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    var authExpanded by remember { mutableStateOf(false) }
-                                    ExposedDropdownMenuBox(
-                                        expanded = authExpanded,
-                                        onExpandedChange = { authExpanded = it },
-                                        modifier = Modifier.fillMaxWidth(0.85f)
-                                    ) {
-                                        OutlinedTextField(
-                                            value = stringResource(wifiAuth.displayResId),
-                                            onValueChange = {},
-                                            readOnly = true,
-                                            label = { Text(stringResource(R.string.label_auth_type)) },
-                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = authExpanded) },
-                                            modifier = Modifier.fillMaxWidth().menuAnchor()
-                                        )
-                                        ExposedDropdownMenu(
-                                            expanded = authExpanded,
-                                            onDismissRequest = { authExpanded = false }
-                                        ) {
-                                            WifiAuth.entries.forEach { auth ->
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(auth.displayResId)) },
-                                                    onClick = { wifiAuth = auth; authExpanded = false }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                                WriteDataType.BLUETOOTH -> {
-                                    OutlinedTextField(
-                                        value = btMac,
-                                        onValueChange = { btMac = it },
-                                        label = { Text(stringResource(R.string.label_bt_mac)) },
-                                        placeholder = { Text(stringResource(R.string.placeholder_bt_mac)) },
-                                        modifier = Modifier.fillMaxWidth(0.85f),
-                                        singleLine = true
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = btName,
-                                        onValueChange = { btName = it },
-                                        label = { Text(stringResource(R.string.label_bt_name)) },
-                                        placeholder = { Text(stringResource(R.string.placeholder_bt_name)) },
-                                        modifier = Modifier.fillMaxWidth(0.85f),
-                                        singleLine = true
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // ---- 发送按钮 ----
-                            val canSend = when (selectedType) {
-                                WriteDataType.TEXT, WriteDataType.URL -> textInput.isNotEmpty()
-                                WriteDataType.WIFI -> wifiSsid.isNotEmpty()
-                                WriteDataType.BLUETOOTH -> btMac.isNotEmpty()
-                            }
+                    ConnectionState.DISCONNECTED -> {
+                        BasicText(
+                            text = stringResource(R.string.p2p_label_select_mode),
+                            style = TextStyle(fontSize = 16.sp),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Button(
-                                onClick = {
-                                    val formatted = buildFormattedMessage()
-                                    onMessageChange(formatted)
-                                    onSendMessage(formatted)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp),
-                                enabled = canSend
-                            ) {
-                                Text(stringResource(R.string.p2p_button_send))
-                            }
+                                onClick = onStartDiscovery,
+                                text = stringResource(R.string.p2p_button_discover)
+                            )
+                            Button(
+                                onClick = onStartAdvertising,
+                                text = stringResource(R.string.p2p_button_advertise)
+                            )
+                        }
+                    }
 
-                            // ---- 断开连接 ----
-                            OutlinedButton(
-                                onClick = onDisconnect,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.p2p_button_disconnect))
+                    ConnectionState.ADVERTISING -> {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        CircularProgressIndicator(progress = 0.5f)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        BasicText(
+                            text = stringResource(R.string.p2p_text_waiting_reader),
+                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onStopAdvertising,
+                            text = stringResource(R.string.p2p_button_stop_advertise)
+                        )
+                    }
+
+                    ConnectionState.DISCOVERING -> {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        CircularProgressIndicator(progress = 0.5f)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        BasicText(
+                            text = stringResource(R.string.p2p_text_approach_device),
+                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onStopDiscovery,
+                            text = stringResource(R.string.p2p_button_stop_discovery)
+                        )
+                    }
+
+                    ConnectionState.CONNECTING -> {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        CircularProgressIndicator(progress = 0.5f)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        BasicText(
+                            text = stringResource(R.string.p2p_text_connecting),
+                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center)
+                        )
+                    }
+
+                    ConnectionState.CONNECTED -> {
+                        BasicText(
+                            text = stringResource(R.string.p2p_text_connected),
+                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center),
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+
+                        // ---- 接收消息区域 ----
+                        BasicCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                BasicText(
+                                    text = stringResource(R.string.p2p_label_received),
+                                    style = TextStyle(fontSize = 16.sp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                if (receivedNearbyMessage.isEmpty()) {
+                                    BasicText(
+                                        text = stringResource(R.string.p2p_placeholder_waiting),
+                                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                                    )
+                                } else {
+                                    ParsedMessageDisplay(receivedNearbyMessage)
+                                }
                             }
                         }
+
+                        // ---- 类型选择 ----
+                        var typeExpanded by remember { mutableStateOf(false) }
+                        Box(modifier = Modifier.fillMaxWidth(0.85f)) {
+                            Button(
+                                onClick = { typeExpanded = true },
+                                style = ButtonStyle.OutlinedButton,
+                                text = stringResource(R.string.format_type_label, stringResource(selectedType.labelResId)),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Menu(
+                                opened = typeExpanded,
+                                onDismissRequest = { typeExpanded = false }
+                            ) {
+                                WriteDataType.entries.forEach { type ->
+                                    BasicText(
+                                        text = stringResource(type.labelResId),
+                                        style = TextStyle(fontSize = 16.sp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                selectedType = type
+                                                typeExpanded = false
+                                            }
+                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // ---- 动态输入区 ----
+                        when (selectedType) {
+                            WriteDataType.TEXT -> {
+                                TextField(
+                                    value = textInput,
+                                    onValueChange = { textInput = it },
+                                    label = stringResource(R.string.label_text_content),
+                                    modifier = Modifier.fillMaxWidth(0.85f)
+                                )
+                            }
+                            WriteDataType.URL -> {
+                                TextField(
+                                    value = textInput,
+                                    onValueChange = { textInput = it },
+                                    label = stringResource(R.string.label_url_input),
+                                    hintText = stringResource(R.string.placeholder_url_example),
+                                    modifier = Modifier.fillMaxWidth(0.85f)
+                                )
+                            }
+                            WriteDataType.WIFI -> {
+                                TextField(
+                                    value = wifiSsid,
+                                    onValueChange = { wifiSsid = it },
+                                    label = stringResource(R.string.label_wifi_ssid),
+                                    modifier = Modifier.fillMaxWidth(0.85f)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextField(
+                                    value = wifiPassword,
+                                    onValueChange = { wifiPassword = it },
+                                    label = stringResource(R.string.label_wifi_password),
+                                    modifier = Modifier.fillMaxWidth(0.85f)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                var encExpanded by remember { mutableStateOf(false) }
+                                Box(modifier = Modifier.fillMaxWidth(0.85f)) {
+                                    Button(
+                                        onClick = { encExpanded = true },
+                                        style = ButtonStyle.OutlinedButton,
+                                        text = stringResource(R.string.label_encryption_type) + ": " + stringResource(wifiEncryption.displayResId),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Menu(
+                                        opened = encExpanded,
+                                        onDismissRequest = { encExpanded = false }
+                                    ) {
+                                        WifiEncryption.entries.forEach { enc ->
+                                            BasicText(
+                                                text = stringResource(enc.displayResId),
+                                                style = TextStyle(fontSize = 16.sp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        wifiEncryption = enc
+                                                        encExpanded = false
+                                                    }
+                                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                var authExpanded by remember { mutableStateOf(false) }
+                                Box(modifier = Modifier.fillMaxWidth(0.85f)) {
+                                    Button(
+                                        onClick = { authExpanded = true },
+                                        style = ButtonStyle.OutlinedButton,
+                                        text = stringResource(R.string.label_auth_type) + ": " + stringResource(wifiAuth.displayResId),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Menu(
+                                        opened = authExpanded,
+                                        onDismissRequest = { authExpanded = false }
+                                    ) {
+                                        WifiAuth.entries.forEach { auth ->
+                                            BasicText(
+                                                text = stringResource(auth.displayResId),
+                                                style = TextStyle(fontSize = 16.sp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        wifiAuth = auth
+                                                        authExpanded = false
+                                                    }
+                                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            WriteDataType.BLUETOOTH -> {
+                                TextField(
+                                    value = btMac,
+                                    onValueChange = { btMac = it },
+                                    label = stringResource(R.string.label_bt_mac),
+                                    hintText = stringResource(R.string.placeholder_bt_mac),
+                                    modifier = Modifier.fillMaxWidth(0.85f)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextField(
+                                    value = btName,
+                                    onValueChange = { btName = it },
+                                    label = stringResource(R.string.label_bt_name),
+                                    hintText = stringResource(R.string.placeholder_bt_name),
+                                    modifier = Modifier.fillMaxWidth(0.85f)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // ---- 发送按钮 ----
+                        val canSend = when (selectedType) {
+                            WriteDataType.TEXT, WriteDataType.URL -> textInput.isNotEmpty()
+                            WriteDataType.WIFI -> wifiSsid.isNotEmpty()
+                            WriteDataType.BLUETOOTH -> btMac.isNotEmpty()
+                        }
+                        Button(
+                            onClick = {
+                                val formatted = buildFormattedMessage()
+                                onMessageChange(formatted)
+                                onSendMessage(formatted)
+                            },
+                            text = stringResource(R.string.p2p_button_send),
+                            enabled = canSend,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp)
+                        )
+
+                        // ---- 断开连接 ----
+                        Button(
+                            onClick = onDisconnect,
+                            style = ButtonStyle.OutlinedButton,
+                            text = stringResource(R.string.p2p_button_disconnect),
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
+        }
     }
 }
 
@@ -441,30 +448,30 @@ fun P2PScreen(
 @Composable
 private fun ParsedMessageDisplay(message: String) {
     when {
-        message.startsWith("TEXT:") -> Text(stringResource(R.string.format_record_text, message.removePrefix("TEXT:")))
-        message.startsWith("URL:") -> Text(stringResource(R.string.format_record_uri, message.removePrefix("URL:")))
+        message.startsWith("TEXT:") -> BasicText(stringResource(R.string.format_record_text, message.removePrefix("TEXT:")))
+        message.startsWith("URL:") -> BasicText(stringResource(R.string.format_record_uri, message.removePrefix("URL:")))
         message.startsWith("WIFI:") -> {
             val parts = message.removePrefix("WIFI:").split("|")
             if (parts.size >= 4) {
                 val encName = WifiEncryption.entries.find { it.wscValue == (parts[2].toIntOrNull() ?: 0) }?.displayResId
                 val authName = WifiAuth.entries.find { it.wscValue == (parts[3].toIntOrNull() ?: 0) }?.displayResId
                 Column {
-                    Text(stringResource(R.string.format_ssid, parts[0]))
-                    if (parts[1].isNotEmpty()) Text(stringResource(R.string.format_wifi_password, parts[1]))
-                    if (encName != null) Text(stringResource(R.string.format_encryption_type, stringResource(encName)))
-                    if (authName != null) Text(stringResource(R.string.format_auth_type, stringResource(authName)))
+                    BasicText(stringResource(R.string.format_ssid, parts[0]))
+                    if (parts[1].isNotEmpty()) BasicText(stringResource(R.string.format_wifi_password, parts[1]))
+                    if (encName != null) BasicText(stringResource(R.string.format_encryption_type, stringResource(encName)))
+                    if (authName != null) BasicText(stringResource(R.string.format_auth_type, stringResource(authName)))
                 }
-            } else Text(message)
+            } else BasicText(message)
         }
         message.startsWith("BT:") -> {
             val parts = message.removePrefix("BT:").split("|")
             if (parts.size >= 2) {
                 Column {
-                    Text(stringResource(R.string.format_bt_mac, parts[0]))
-                    if (parts[1].isNotEmpty()) Text(stringResource(R.string.format_bt_device_name, parts[1]))
+                    BasicText(stringResource(R.string.format_bt_mac, parts[0]))
+                    if (parts[1].isNotEmpty()) BasicText(stringResource(R.string.format_bt_device_name, parts[1]))
                 }
-            } else Text(message)
+            } else BasicText(message)
         }
-        else -> Text(message)
+        else -> BasicText(message)
     }
 }

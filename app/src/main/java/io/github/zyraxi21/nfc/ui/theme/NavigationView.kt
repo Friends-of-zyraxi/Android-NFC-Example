@@ -5,23 +5,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,8 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.microsoft.fluentui.theme.FluentTheme
+import com.microsoft.fluentui.tokenized.AppBar
+import com.microsoft.fluentui.tokenized.navigation.TabBar
+import com.microsoft.fluentui.tokenized.navigation.TabData
 import io.github.zyraxi21.nfc.R
 import kotlinx.coroutines.launch
 
@@ -47,7 +46,6 @@ enum class NavigationItem(
     P2P(R.string.nav_p2p, Icons.Default.Call)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomNavigationApp(
     readerScreen: @Composable () -> Unit,
@@ -66,23 +64,29 @@ fun BottomNavigationApp(
         selectedItemIndex = pagerState.settledPage
     }
 
+    val tabDataList = navigationItems.mapIndexed { index, item ->
+        TabData(
+            title = stringResource(item.titleResId),
+            icon = item.icon,
+            selected = selectedItemIndex == index,
+            onClick = {
+                selectedItemIndex = index
+                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+            }
+        )
+    }
+
     Scaffold(
         snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } },
         topBar = {
             Column {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.app_title),
-                            modifier = Modifier
-                                .wrapContentSize(Alignment.Center)
-                                .align(Alignment.CenterHorizontally)
-                        )
-                    }
+                AppBar(
+                    title = stringResource(R.string.app_title),
+                    centerAlignAppBar = true
                 )
-                Text(
+                BasicText(
                     text = stringResource(R.string.version_label),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = TextStyle(fontSize = 12.sp),
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 4.dp)
@@ -90,19 +94,10 @@ fun BottomNavigationApp(
             }
         },
         bottomBar = {
-            NavigationBar {
-                navigationItems.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = stringResource(item.titleResId)) },
-                        label = { Text(stringResource(item.titleResId)) },
-                        selected = selectedItemIndex == index,
-                        onClick = {
-                            selectedItemIndex = index
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        }
-                    )
-                }
-            }
+            TabBar(
+                tabDataList = tabDataList,
+                selectedIndex = selectedItemIndex
+            )
         }
     ) { innerPadding ->
         BoxWithConstraints(
@@ -134,7 +129,7 @@ fun BottomNavigationApp(
 @Preview(showBackground = true)
 @Composable
 fun PreviewBottomNavigationApp() {
-    MaterialTheme {
+    FluentTheme {
         BottomNavigationApp(
             readerScreen = {},
             writeScreen = {},
