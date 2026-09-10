@@ -14,7 +14,7 @@ commits: fd60a55..HEAD
 
 **Verification** — `./gradlew :app:assembleDebug` BUILD SUCCESSFUL；`./gradlew :app:testDebugUnitTest` BUILD SUCCESSFUL；全局搜索确认无 Material3 视觉组件残留 import。
 
-**Journey log** — Fluent 的 `TextField` 不支持 `minLines`，多行文本输入改为默认行为；`ExposedDropdownMenuBox` 无直接等价物，用 `Button(OutlinedButton)` + `Menu` 组合替代；`CircularProgressIndicator` 需要 `progress` 参数（非 indeterminate），用 0.5f 作为动画中值。
+**Journey log** — Fluent 的 `TextField` 不支持 `minLines`，多行文本输入改为默认行为；`ExposedDropdownMenuBox` 无直接等价物，用 `Button(OutlinedButton)` + `Menu` 组合替代；`CircularProgressIndicator` 需要 `progress` 参数（非 indeterminate），用 0.5f 作为动画中值；FluentTheme 内部依赖 `runtime-livedata` 适配器，缺失导致启动闪退，需显式声明。
 
 ## [S1] Problem
 
