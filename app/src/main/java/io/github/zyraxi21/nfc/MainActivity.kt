@@ -27,9 +27,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
+import com.microsoft.fluentui.tokenized.notification.NotificationResult
+import com.microsoft.fluentui.tokenized.notification.SnackbarState
 
 import io.github.zyraxi21.nfc.ui.theme.BottomNavigationApp
 import io.github.zyraxi21.nfc.ui.theme.ConnectionState
@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
     var btMac by mutableStateOf("")
     var btName by mutableStateOf("")
 
-    private var snackbarHostState: SnackbarHostState? = null
+    private var snackbarHostState: SnackbarState? = null
 
     // P2P通信相关状态变量
     private var p2pConnectionState by mutableStateOf(ConnectionState.DISCONNECTED)
@@ -189,7 +189,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyApplicationTheme {
                 val coroutineScope = rememberCoroutineScope()
-                snackbarHostState = remember { SnackbarHostState() }
+                snackbarHostState = remember { SnackbarState() }
 
                 // ---- 权限请求 ----
                 val nearbyPermissions = buildNearbyPermissions()
@@ -227,9 +227,9 @@ class MainActivity : ComponentActivity() {
                                     coroutineScope.launch {
                                         val result = snackbarHostState!!.showSnackbar(
                                             message = getString(messageRes),
-                                            actionLabel = if (actionRes != 0) getString(actionRes) else null
+                                            actionText = if (actionRes != 0) getString(actionRes) else null
                                         )
-                                        if (result == SnackbarResult.ActionPerformed) {
+                                        if (result == NotificationResult.CLICKED) {
                                             action?.invoke()
                                         }
                                     }

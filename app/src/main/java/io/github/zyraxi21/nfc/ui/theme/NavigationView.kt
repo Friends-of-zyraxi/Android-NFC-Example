@@ -10,8 +10,6 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +30,8 @@ import com.microsoft.fluentui.theme.FluentTheme
 import com.microsoft.fluentui.tokenized.AppBar
 import com.microsoft.fluentui.tokenized.navigation.TabBar
 import com.microsoft.fluentui.tokenized.navigation.TabData
+import com.microsoft.fluentui.tokenized.notification.Snackbar
+import com.microsoft.fluentui.tokenized.notification.SnackbarState
 import io.github.zyraxi21.nfc.R
 import kotlinx.coroutines.launch
 
@@ -49,7 +49,7 @@ fun BottomNavigationApp(
     readerScreen: @Composable () -> Unit,
     writeScreen: @Composable () -> Unit,
     p2pScreen: @Composable () -> Unit,
-    snackbarHostState: SnackbarHostState? = null
+    snackbarHostState: SnackbarState? = null
 ) {
     var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
     val pagerState = rememberPagerState(initialPage = selectedItemIndex, pageCount = { 3 })
@@ -77,7 +77,7 @@ fun BottomNavigationApp(
     val isDark = isSystemInDarkTheme()
     Scaffold(
         containerColor = if (isDark) Color(0xFF1B1A19) else Color(0xFFF3F2F1),
-        snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } },
+        snackbarHost = { snackbarHostState?.let { Snackbar(it) } },
         topBar = {
             Column(modifier = Modifier.statusBarsPadding()) {
                 AppBar(

@@ -2,8 +2,6 @@ package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -17,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.microsoft.fluentui.tokenized.controls.BasicCard
 import com.microsoft.fluentui.tokenized.controls.Button
+import com.microsoft.fluentui.tokenized.notification.NotificationResult
+import com.microsoft.fluentui.tokenized.notification.SnackbarState
 import io.github.zyraxi21.nfc.R
 import io.github.zyraxi21.nfc.util.checkNfcAvailability
 import kotlinx.coroutines.launch
@@ -26,7 +26,7 @@ fun NFCReaderScreen(
     tagInfo: String,
     tagContent: String,
     isButtonVisible: Boolean,
-    snackbarHostState: SnackbarHostState? = null,
+    snackbarHostState: SnackbarState? = null,
     onCheckNfcClick: () -> Unit = {},
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -46,9 +46,9 @@ fun NFCReaderScreen(
                         coroutineScope.launch {
                             val result = snackbarHostState.showSnackbar(
                                 message = context.getString(messageRes),
-                                actionLabel = if (actionRes != 0) context.getString(actionRes) else null
+                                actionText = if (actionRes != 0) context.getString(actionRes) else null
                             )
-                            if (result == SnackbarResult.ActionPerformed) {
+                            if (result == NotificationResult.CLICKED) {
                                 action?.invoke()
                             }
                         }
