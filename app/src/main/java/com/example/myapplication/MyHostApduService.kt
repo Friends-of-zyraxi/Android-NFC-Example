@@ -1,9 +1,19 @@
 package com.example.myapplication
 
+import android.content.Context
 import android.nfc.cardemulation.HostApduService
 import android.os.Bundle
 import android.util.Log
+import com.example.myapplication.util.HceDataStore
 
+/**
+ * NFC Forum Type 4 Tag 的 Host Card Emulation 服务。
+ *
+ * 兼容性说明：小米 HyperOS 会把标准 T4T AID（D2760000850101）直接写进 NFC 控制器的
+ * 路由表并指向 SE，这类请求不会下发到本服务（应用层的 preferred service、payment 默认
+ * 服务都不起作用）。因此与自家读卡端的通信实际依赖私有 AID `F012345678`，
+ * T4T 通路仅作为其它机型的兼容实现保留。
+ */
 class MyHostApduService : HostApduService() {
 
     companion object {
@@ -22,30 +32,76 @@ class MyHostApduService : HostApduService() {
         val SW_DATA_INVALID = hexStringToByteArray("6984")
         val SW_FILE_NOT_FOUND = hexStringToByteArray("6A82")
 
+        /** 6B00：偏移量超出文件范围（T4T 规范要求，不能用 9000 冒充成功） */
+        val SW_OFFSET_OUT_OF_RANGE = hexStringToByteArray("6B00")
+
         // NFC Forum Type 4 Tag 常量
         val NDEF_TAG_AID = hexStringToByteArray("D2760000850101")
         val CC_FILE_ID = hexStringToByteArray("E103")
         val NDEF_FILE_ID = hexStringToByteArray("E104")
 
-        // 自定义 APDU 指令
+        // 自定义 APDU 指令（其中 CMD_READ_EMULATED_DATA 用 P1P2 承载读取偏移量）
         val CMD_GET_DEVICE_NAME = hexStringToByteArray("80010000")
         val CMD_CONFIRM_CONNECTION = hexStringToByteArray("80020000")
         val CMD_READ_EMULATED_DATA = hexStringToByteArray("80030000")
 
-        var deviceNameToShare = "CardDevice_123"
-        var connectionEstablished = false
+        /**
+         * 单次响应携带的数据上限。Le=0 表示期望 256 字节，而短 APDU 的数据域最多 255 字节，
+         * 这里统一按 252 返回，由读卡端用偏移量分块取完剩余部分。
+         */
+        private const val MAX_APDU_DATA = 252
 
-        // 卡模拟数据（由 MainActivity 在启动模拟时设置）
+        /** 供读卡端一致使用的单块大小（与 MAX_APDU_DATA 相同） */
+        const val CHUNK_SIZE = MAX_APDU_DATA
+
+        private const val deviceNameToShare = "CardDevice_123"
+
+        @Volatile
+        private var connectionEstablished = false
+
+        /** 当前待模拟的 NDEF 消息。写入请走 [setEmulatedData]，以便同步落盘。 */
+        @Volatile
         var emulatedData: ByteArray? = null
+            private set
+
+        /** 模拟数据的业务类型（TEXT / URL / WIFI / BLUETOOTH） */
+        @Volatile
         var emulatedDataType: String? = null
+            private set
+
+        /**
+         * 设置或清除待模拟的 NDEF 数据（由 MainActivity 调用）。
+         *
+         * 除更新进程内缓存外还会写入 [HceDataStore]：HCE 服务可能在应用进程被系统回收后
+         * 由系统重新绑定启动，届时静态字段已经丢失，必须从磁盘恢复，否则读卡端会读到空内容。
+         */
+        fun setEmulatedData(context: Context, data: ByteArray?, type: String? = null) {
+            emulatedData = data
+            emulatedDataType = type
+            HceDataStore.save(context, data, type)
+        }
+
+        /** 读取当前模拟数据；进程内缓存为空时尝试从磁盘恢复 */
+        private fun emulatedDataOrRestore(context: Context): ByteArray? {
+            emulatedData?.let { return it }
+            val restored = HceDataStore.load(context) ?: return null
+            emulatedData = restored.first
+            emulatedDataType = restored.second
+            return restored.first
+        }
     }
 
     // 当前选中的文件 ID（null = 未选中）
     private var selectedFileId: ByteArray? = null
 
+    override fun onCreate() {
+        super.onCreate()
+        // 进程可能被系统回收后重建，这里预热一次，避免首个 APDU 才去读磁盘
+        emulatedDataOrRestore(this)
+    }
+
     override fun processCommandApdu(commandApdu: ByteArray, extras: Bundle?): ByteArray {
         Log.i(TAG, "APDU: ${commandApdu.toHexString()}")
-        connectionEstablished = false
 
         if (commandApdu.size < 4) return SW_DATA_INVALID
 
@@ -65,11 +121,8 @@ class MyHostApduService : HostApduService() {
             // SELECT by AID (P1=04)
             if (p1 == 0x04) {
                 Log.i(TAG, "SELECT AID: ${data.toHexString()}")
-                if (data.contentEquals(NDEF_TAG_AID)) {
-                    selectedFileId = null
-                    return SW_OK
-                }
-                // 也接受自定义 AID
+                // T4T 标准 AID 与私有 AID 都接受；未知 AID 交由读卡端自行判断
+                selectedFileId = null
                 return SW_OK
             }
 
@@ -109,9 +162,9 @@ class MyHostApduService : HostApduService() {
             }
 
             if (fileId.contentEquals(NDEF_FILE_ID)) {
-                val ndefData = emulatedData ?: ByteArray(0)
-                Log.i(TAG, "READ_BINARY NDEF offset=$offset len=$le, total=${ndefData.size}")
-                return readFromFile(ndefData, offset, le)
+                val ndef = ndefFile()
+                Log.i(TAG, "READ_BINARY NDEF offset=$offset len=$le, total=${ndef.size}")
+                return readFromFile(ndef, offset, le)
             }
         }
 
@@ -132,12 +185,12 @@ class MyHostApduService : HostApduService() {
         }
 
         if (header.contentEquals(CMD_READ_EMULATED_DATA)) {
-            Log.i(TAG, "CMD: READ_EMULATED_DATA")
-            val data = emulatedData
-            if (data != null) {
-                return readFromFile(data, 0, 240) + SW_OK
-            }
-            return SW_DATA_INVALID
+            // P1P2 = 读取偏移量，便于读卡端把大于单块上限的 NDEF 消息分块取回
+            val offset = (p1 shl 8) or p2
+            val data = emulatedDataOrRestore(this) ?: return SW_DATA_INVALID
+            Log.i(TAG, "CMD: READ_EMULATED_DATA offset=$offset total=${data.size}")
+            // readFromFile 返回的字节串已附带 SW_OK，不要再追加，否则读卡端会解析出 trailing data
+            return readFromFile(data, offset, MAX_APDU_DATA)
         }
 
         Log.w(TAG, "Unknown command INS=${String.format("%02X", ins)}")
@@ -152,10 +205,24 @@ class MyHostApduService : HostApduService() {
 
     // ---- 辅助方法 ----
 
+    /**
+     * T4T 的 NDEF 文件内容 = 2 字节 NLEN（NDEF 消息长度，大端）+ NDEF 消息本身。
+     * 缺少 NLEN 会让标准读卡端把 NDEF 记录的头部误读成长度，导致解析失败。
+     */
+    private fun ndefFile(): ByteArray {
+        val ndef = emulatedDataOrRestore(this) ?: return ByteArray(2)
+        val len = ndef.size
+        return byteArrayOf(
+            ((len shr 8) and 0xFF).toByte(),
+            (len and 0xFF).toByte()
+        ) + ndef
+    }
+
     /** 构建 NFC Forum Type 4 Tag Capability Container */
     private fun buildCapabilityContainer(): ByteArray {
-        val ndefData = emulatedData ?: ByteArray(0)
-        val maxNdefSize = maxOf(ndefData.size, 256).let { if (it > 0xFF) 0x0FFF else it }
+        val ndefSize = emulatedDataOrRestore(this)?.size ?: 0
+        // Max NDEF size 指 NDEF 消息本身的最大长度（不含 NLEN），至少要能容纳当前内容
+        val maxNdefSize = maxOf(ndefSize, 0x00FF).coerceAtMost(0xFFFE)
 
         return byteArrayOf(
             // CCLEN = 0x000F (15 bytes)
@@ -180,10 +247,17 @@ class MyHostApduService : HostApduService() {
         )
     }
 
-    /** 从文件中按偏移和长度读取 */
+    /** 按偏移和长度从文件内容中读取；越界时按 ISO 7816-4 返回 6B00 */
     private fun readFromFile(fileData: ByteArray, offset: Int, reqLen: Int): ByteArray {
-        // Le=0 表示请求 256 字节；但限制每次最多返回 252 字节数据 + 2 字节 SW
-        val maxRead = minOf(if (reqLen == 0) 256 else reqLen, fileData.size - offset, 252)
+        if (offset < 0 || offset > fileData.size) return SW_OFFSET_OUT_OF_RANGE
+
+        // Le=0 表示请求 256 字节；但短 APDU 数据域最多 255 字节，这里统一截到 252
+        val maxRead = minOf(
+            if (reqLen == 0) 256 else reqLen,
+            fileData.size - offset,
+            MAX_APDU_DATA
+        )
+        // offset == size 时读到的长度为 0，属于合法情况（已到文件末尾）
         if (maxRead <= 0) return SW_OK
 
         val result = ByteArray(maxRead + 2)

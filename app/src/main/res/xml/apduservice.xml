@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/hce_service_desc"
-    android:requireDeviceUnlock="false">
+    android:requireDeviceUnlock="false"
+    android:requireDeviceScreenOn="false">
+    <!-- 归类为 other：本服务既不模拟支付卡，也不参与"触碰付款"。
+         放在 payment 类别会混进支付默认服务的选择列表，语义不符。 -->
     <aid-group android:description="@string/hce_aid_desc"
-        android:category="payment">
-        <!-- NFC Forum Type 4 Tag AID（NDEF 标签模拟的标准 AID） -->
-        <aid-filter android:name="D2760000850101"/>
-        <!-- 自定义 AID -->
+        android:category="other">
+        <!-- 私有 AID：两台设备之间实际依赖这条通路 -->
         <aid-filter android:name="F012345678"/>
+        <!-- NFC Forum Type 4 Tag AID（NDEF 标签模拟的标准 AID）。
+             注意：小米 HyperOS 会把该 AID 写死在 NFC 控制器的路由表里指向 SE，
+             第三方应用的 HCE 服务在小米设备上收不到该 AID 的请求，
+             保留它仅用于兼容其它厂商机型。 -->
+        <aid-filter android:name="D2760000850101"/>
     </aid-group>
 </host-apdu-service>

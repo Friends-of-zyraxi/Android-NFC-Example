@@ -3,11 +3,14 @@
 package com.example.myapplication
 
 import android.app.PendingIntent
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.ComponentName
 import android.content.Intent
 import android.nfc.cardemulation.CardEmulation
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.wifi.WifiManager
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
@@ -15,6 +18,7 @@ import android.nfc.Tag
 import android.nfc.tech.*
 import android.nfc.tech.IsoDep
 import android.os.Bundle
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.Manifest
@@ -41,6 +45,7 @@ import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.nio.charset.Charset
 import kotlin.time.Duration.Companion.seconds
@@ -90,10 +95,26 @@ class MainActivity : ComponentActivity() {
     private var receivedNearbyMessage by mutableStateOf("")
     private var messageToSend by mutableStateOf("")
     private var currentEndpointId: String? = null
+    private var isBluetoothEnabled by mutableStateOf(false)
+    private var isWiFiEnabled by mutableStateOf(false)
+    private var nearbyRadioWarning by mutableStateOf<String?>(null)
+
+    private val bluetoothAdapter: BluetoothAdapter?
+        get() = getSystemService(BluetoothManager::class.java)?.adapter
+
+    private val wifiManager: WifiManager?
+        get() = getSystemService(WifiManager::class.java)
 
     // 常量 (来自 ReadCard.kt)
     companion object {
         const val TAG = "NFC_DEMO"
+
+        /** 保存/恢复卡模拟状态用的 key */
+        private const val STATE_WRITE_STATE = "write_state"
+
+        /** 从对端 HCE 卡读取 NDEF 时的防御性总长度上限（64 KiB） */
+        private const val MAX_EMULATED_BYTES = 64 * 1024
+
         val URI_PREFIX_MAP = mapOf(
             0x00.toByte() to "", 0x01.toByte() to "http://www.", 0x02.toByte() to "https://www.",
             0x03.toByte() to "http://", 0x04.toByte() to "https://", 0x05.toByte() to "tel:",
@@ -115,8 +136,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 恢复卡模拟状态：Activity 重建后若状态退回 IDLE，onResume 会重新打开 reader mode，
+        // 而 reader mode 会关闭卡模拟，正在进行的模拟会因此失效。
+        savedInstanceState?.getString(STATE_WRITE_STATE)
+            ?.let { saved -> WriteState.entries.firstOrNull { it.name == saved } }
+            ?.let { restored -> writeState = restored }
+
         // 初始化 Nearby Connections 客户端
         connectionsClient = Nearby.getConnectionsClient(this)
+        refreshNearbyRadioStatus()
 
         // 初始化 NFC 适配器
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
@@ -160,13 +188,7 @@ class MainActivity : ComponentActivity() {
                 snackbarHostState = remember { SnackbarHostState() }
 
                 // ---- 权限请求 ----
-                val nearbyPermissions = arrayOf(
-                    Manifest.permission.BLUETOOTH_SCAN,
-                    Manifest.permission.BLUETOOTH_ADVERTISE,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.NEARBY_WIFI_DEVICES
-                )
+                val nearbyPermissions = buildNearbyPermissions()
                 var hasNearbyPermissions by remember {
                     mutableStateOf(
                         nearbyPermissions.all {
@@ -179,6 +201,7 @@ class MainActivity : ComponentActivity() {
                 ) { results ->
                     hasNearbyPermissions = results.values.all { it }
                     if (hasNearbyPermissions) {
+                        refreshNearbyRadioStatus()
                         showToast(getString(R.string.toast_permission_granted))
                     }
                 }
@@ -296,8 +319,12 @@ class MainActivity : ComponentActivity() {
                                     WriteDataType.WIFI -> createWifiNdefMessage(wifiSsid, wifiPassword, wifiEncryption, wifiAuth)
                                     WriteDataType.BLUETOOTH -> createBluetoothNdefMessage(btMac, btName)
                                 }
-                                MyHostApduService.emulatedData = ndefMessage.toByteArray()
-                                MyHostApduService.emulatedDataType = type.name
+                                // 写入 HCE 服务并同步落盘：进程被回收后服务重启仍能恢复数据
+                                MyHostApduService.setEmulatedData(
+                                    this@MainActivity,
+                                    ndefMessage.toByteArray(),
+                                    type.name
+                                )
                                 // 设置我们的 HCE 服务为首选，避免系统钱包抢夺
                                 try {
                                     val ce = CardEmulation.getInstance(nfcAdapter)
@@ -314,12 +341,12 @@ class MainActivity : ComponentActivity() {
                                 writeState = WriteState.IDLE
                                 writeStatusMessage = ""
                                 currentWriteMode = WriteMode.IDLE
-                                MyHostApduService.emulatedData = null
-                                MyHostApduService.emulatedDataType = null
-                                // 取消首选服务设置
+                                MyHostApduService.setEmulatedData(this@MainActivity, null)
+                                // 取消首选服务：setPreferredService(activity, null) 会抛 NPE，
+                                // 必须使用 unsetPreferredService
                                 try {
-                                    val ce = CardEmulation.getInstance(nfcAdapter)
-                                    ce.setPreferredService(this@MainActivity, null)
+                                    CardEmulation.getInstance(nfcAdapter)
+                                        .unsetPreferredService(this@MainActivity)
                                 } catch (e: Exception) {
                                     Log.w(TAG, "Failed to unset preferred HCE service", e)
                                 }
@@ -352,10 +379,14 @@ class MainActivity : ComponentActivity() {
                     },
                     p2pScreen = {
                         P2PScreen(
-                            isNfcEnabled = nfcAdapter?.isEnabled == true,
                             connectionState = p2pConnectionState,
                             receivedNearbyMessage = receivedNearbyMessage,
+                            isBluetoothEnabled = isBluetoothEnabled,
+                            isWiFiEnabled = isWiFiEnabled,
+                            nearbyRadioWarning = nearbyRadioWarning,
                             onMessageChange = { messageToSend = it },
+                            onEnableBluetooth = { openBluetoothSettings() },
+                            onEnableWiFi = { openWifiSettings() },
                             onStartAdvertising = { startAdvertising() },
                             onStopAdvertising = { stopAdvertising() },
                             onStartDiscovery = { startDiscovery() },
@@ -367,9 +398,6 @@ class MainActivity : ComponentActivity() {
                                 } else {
                                     showToast(getString(R.string.toast_not_connected))
                                 }
-                            },
-                            onEnableNfc = {
-                                startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
                             },
                             hasPermissions = hasNearbyPermissions,
                             onRequestPermissions = { permLauncher.launch(nearbyPermissions) }
@@ -738,7 +766,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // =======================================================================
-    // Nearby Connections P2P (来自 MainActivity.kt 原始代码和 P2PCommunication.kt)
+    // Nearby Connections P2P
     // =======================================================================
 
     // （此处省略原 MainActivity 中的 Nearby Connections 相关函数，
@@ -804,16 +832,74 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // 按 Android 版本构建 Nearby 必需的运行时权限集合（minSdk = 34）
+    private fun buildNearbyPermissions(): Array<String> = buildList {
+        add(Manifest.permission.BLUETOOTH_SCAN)
+        add(Manifest.permission.BLUETOOTH_ADVERTISE)
+        add(Manifest.permission.BLUETOOTH_CONNECT)
+        // ACCESS_*_LOCATION 仅在 API 31 及以下需要（minSdk 34 已覆盖不到）；
+        // Wi-Fi 相关能力自 API 32 起统一走 NEARBY_WIFI_DEVICES。
+        add(Manifest.permission.NEARBY_WIFI_DEVICES)
+        if (Build.VERSION.SDK_INT >= 37) {
+            add(Manifest.permission.ACCESS_LOCAL_NETWORK)
+        }
+    }.toTypedArray()
+
     // 检查 Nearby 所需权限
-    private fun checkNearbyPermissions(): Boolean {
-        val perms = arrayOf(
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_ADVERTISE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.NEARBY_WIFI_DEVICES
-        )
-        return perms.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
+    private fun checkNearbyPermissions(): Boolean =
+        buildNearbyPermissions().all {
+            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+        }
+
+    // 读取当前蓝牙 / Wi-Fi 无线装置状态。
+    private fun refreshNearbyRadioStatus() {
+        isBluetoothEnabled = try {
+            bluetoothAdapter?.isEnabled == true
+        } catch (_: SecurityException) {
+            false
+        }
+        isWiFiEnabled = try {
+            wifiManager?.wifiState == WifiManager.WIFI_STATE_ENABLED
+        } catch (_: SecurityException) {
+            false
+        }
+    }
+
+    private fun hasNearbyRadioEnabled(): Boolean =
+        isBluetoothEnabled || isWiFiEnabled
+
+    private fun nearbyRadioWarningMessage(): String? = when {
+        !isBluetoothEnabled && !isWiFiEnabled -> getString(R.string.p2p_text_radio_disabled)
+        else -> null
+    }
+
+    // 2026 年底起 Nearby Connections 不再自动打开 Wi-Fi / 蓝牙，
+    // 因此启动任何连接任务前都必须确认至少一个必要无线装置已开启。
+    private fun ensureNearbyRadiosReady(): Boolean {
+        refreshNearbyRadioStatus()
+        if (!hasNearbyRadioEnabled()) {
+            nearbyRadioWarning = nearbyRadioWarningMessage()
+            showToast(nearbyRadioWarning ?: getString(R.string.toast_permission_required))
+            return false
+        }
+        nearbyRadioWarning = null
+        return true
+    }
+
+    private fun openBluetoothSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+        } catch (e: Exception) {
+            Log.e(TAG, "无法打开蓝牙设置", e)
+        }
+    }
+
+    private fun openWifiSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+        } catch (e: Exception) {
+            Log.e(TAG, "无法打开 Wi-Fi 设置", e)
+        }
     }
 
     // 启动广告模式
@@ -822,6 +908,7 @@ class MainActivity : ComponentActivity() {
             showToast(getString(R.string.toast_permission_required))
             return
         }
+        if (!ensureNearbyRadiosReady()) return
         connectionsClient.stopAdvertising() // 防止 STATUS_ALREADY_ADVERTISING
         val advertisingOptions = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
         connectionsClient.startAdvertising(
@@ -857,6 +944,7 @@ class MainActivity : ComponentActivity() {
             showToast(getString(R.string.toast_permission_required))
             return
         }
+        if (!ensureNearbyRadiosReady()) return
         connectionsClient.stopDiscovery() // 防止重复启动
         val discoveryOptions = DiscoveryOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
         connectionsClient.startDiscovery(
@@ -925,6 +1013,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        refreshNearbyRadioStatus()
+        if (p2pConnectionState != ConnectionState.DISCONNECTED && !hasNearbyRadioEnabled()) {
+            connectionsClient.stopAdvertising()
+            connectionsClient.stopDiscovery()
+            connectionsClient.stopAllEndpoints()
+            p2pConnectionState = ConnectionState.DISCONNECTED
+            currentEndpointId = null
+            nearbyRadioWarning = getString(R.string.p2p_text_radio_disabled)
+            showToast(nearbyRadioWarning.orEmpty())
+        }
         if (writeState == WriteState.EMULATING) return // 仅 HCE 被动模式
         nfcAdapter?.enableReaderMode(
             this, tagCallback,
@@ -935,11 +1033,17 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // 记录卡模拟状态，Activity 重建时恢复，避免 reader mode 重新抢占
+        outState.putString(STATE_WRITE_STATE, writeState.name)
+    }
+
     override fun onPause() {
         super.onPause()
         nfcAdapter?.disableReaderMode(this)
         nfcAdapter?.let {
-            try { CardEmulation.getInstance(it).setPreferredService(this, null) } catch (_: Exception) {}
+            try { CardEmulation.getInstance(it).unsetPreferredService(this) } catch (_: Exception) {}
         }
     }
 
@@ -962,35 +1066,36 @@ class MainActivity : ComponentActivity() {
             handleWriteOnTag(tag)
             return@ReaderCallback
         }
-        // 读卡：优先读系统自动解析的 NDEF（用于 HCE Type 4 Tag），再试 IsoDep 直连
+        // 读卡：优先用自定义 AID 直连。
+        // 小米 HyperOS 会把 NFC Forum T4T AID(D2760000850101) 写死在 NFC 控制器的路由表里指向 SE，
+        // 标准 NDEF 路径会被系统"碰一碰"抢占，只有自定义 AID 才会路由到本应用的 HCE 服务。
+        val hceResult = tryReadHceEmulatedCard(tag)
+        if (hceResult != null) {
+            tagInfo = hceResult.first
+            tagContent = hceResult.second
+            Log.i(TAG, "Read HCE via IsoDep (custom AID)")
+            return@ReaderCallback
+        }
+        // 回退：标准 NDEF 读取（普通 NFC 标签）
         val ndef = Ndef.get(tag)
-        if (ndef != null) {
-            try {
-                ndef.connect()
-                val message = ndef.ndefMessage
-                ndef.close()
-                if (message != null) {
-                    tagInfo = getString(R.string.format_tag_info, tag.toString())
-                    tagContent = parseNdefMessages(listOf(message))
-                    Log.i(TAG, "Read NDEF via reader mode")
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "NDEF read failed, trying IsoDep", e)
-                try { ndef.close() } catch (_: Exception) {}
-                val hceResult = tryReadHceEmulatedCard(tag)
-                if (hceResult != null) {
-                    tagInfo = hceResult.first
-                    tagContent = hceResult.second
-                    Log.i(TAG, "Read HCE via IsoDep fallback")
-                }
+        if (ndef == null) {
+            Log.w(TAG, "No NDEF tech and custom AID read returned nothing: $tag")
+            return@ReaderCallback
+        }
+        try {
+            ndef.connect()
+            val message = ndef.ndefMessage
+            ndef.close()
+            if (message != null) {
+                tagInfo = getString(R.string.format_tag_info, tag.toString())
+                tagContent = parseNdefMessages(listOf(message))
+                Log.i(TAG, "Read NDEF via reader mode")
+            } else {
+                Log.w(TAG, "NDEF message is null: $tag")
             }
-        } else {
-            val hceResult = tryReadHceEmulatedCard(tag)
-            if (hceResult != null) {
-                tagInfo = hceResult.first
-                tagContent = hceResult.second
-                Log.i(TAG, "Read HCE via direct IsoDep")
-            }
+        } catch (e: Exception) {
+            Log.w(TAG, "NDEF read failed", e)
+            try { ndef.close() } catch (_: Exception) {}
         }
     }
 
@@ -1023,42 +1128,66 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 尝试通过 IsoDep + 自定义 AID 读取 HCE 模拟卡片 */
-    /** 尝试通过 IsoDep + 自定义 AID 读取 HCE 模拟卡片，成功返回 (tagInfo, tagContent) */
+    /**
+     * 通过 IsoDep + 私有 AID 读取对端 HCE 模拟卡。
+     *
+     * 不走标准 NDEF 通路的原因：小米 HyperOS 会把 T4T AID(D2760000850101) 写死在 NFC
+     * 控制器的路由表里指向 SE，读到的会是系统"碰一碰"的内容而不是本应用的数据；
+     * 私有 AID 未在 SE 路由表中，会被控制器按兜底规则交给 host。
+     *
+     * @return (tagInfo, tagContent)；对端不是本应用的模拟卡时返回 null
+     */
     private fun tryReadHceEmulatedCard(tag: Tag): Pair<String, String>? {
         val isoDep = IsoDep.get(tag) ?: return null
-        try {
+        return try {
             isoDep.connect()
             isoDep.timeout = 1000
-            // SELECT 自定义 AID
+
+            // SELECT 私有 AID
             val selectAid = byteArrayOf(
                 0x00, 0xA4.toByte(), 0x04, 0x00, 0x05,
                 0xF0.toByte(), 0x12, 0x34, 0x56, 0x78
             )
-            val resp = isoDep.transceive(selectAid)
-            if (resp.size < 2 || resp[resp.size - 2] != 0x90.toByte() || resp[resp.size - 1] != 0x00.toByte()) {
-                return null
+            if (!isoDep.transceive(selectAid).endsWithSuccess()) return null
+
+            // 分块读回模拟数据：CMD_READ_EMULATED_DATA 的 P1P2 是偏移量，单块最多 CHUNK_SIZE 字节
+            val buffer = ByteArrayOutputStream()
+            var offset = 0
+            while (offset <= MAX_EMULATED_BYTES) {
+                val readCmd = byteArrayOf(
+                    0x80.toByte(), 0x03,
+                    ((offset shr 8) and 0xFF).toByte(),
+                    (offset and 0xFF).toByte(),
+                    0x00
+                )
+                val resp = isoDep.transceive(readCmd)
+                if (!resp.endsWithSuccess()) return null
+                val payload = resp.copyOf(resp.size - 2)
+                buffer.write(payload)
+                // 不满一块说明已读到末尾
+                if (payload.size < MyHostApduService.CHUNK_SIZE) break
+                offset += payload.size
             }
-            // 发送 CMD_READ_EMULATED_DATA (0x80030000, Le=0x00 = 256 bytes)
-            val readCmd = byteArrayOf(0x80.toByte(), 0x03, 0x00, 0x00, 0x00)
-            val ndefData = isoDep.transceive(readCmd)
-            if (ndefData.size < 2) return null
-            // 去掉末尾的 SW_OK (9000)
-            val ndefBytes = ndefData.copyOf(ndefData.size - 2)
+
+            val ndefBytes = buffer.toByteArray()
             if (ndefBytes.isEmpty()) return null
 
             val message = NdefMessage(ndefBytes)
             val info = getString(R.string.format_tag_info, getString(R.string.msg_hce_tag))
             val content = parseNdefMessages(listOf(message))
             Log.i(TAG, "HCE card read, ${ndefBytes.size} bytes")
-            return Pair(info, content)
+            Pair(info, content)
         } catch (e: Exception) {
             Log.w(TAG, "HCE read failed, fallback to NDEF", e)
-            return null
+            null
         } finally {
             try { isoDep.close() } catch (_: Exception) {}
         }
     }
+
+    /** 响应是否以 SW=9000 结尾 */
+    private fun ByteArray.endsWithSuccess(): Boolean =
+        size >= 2 && this[size - 2] == 0x90.toByte() && this[size - 1] == 0x00.toByte()
 
     private fun showSnackbar(message: String) {
         val host = snackbarHostState ?: return
