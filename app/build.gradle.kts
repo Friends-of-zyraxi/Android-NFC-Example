@@ -73,6 +73,8 @@ dependencies {
     implementation(libs.androidx.material3)
     // Fluent 内部依赖 material（Material 2 Compose）的 rememberRipple
     implementation("androidx.compose.material:material")
+    // FluentTheme 用 observeAsState 观察 LiveData，需要此适配器
+    implementation("androidx.compose.runtime:runtime-livedata")
     implementation(libs.androidx.constraintlayout.compose)
 
     // Nearby Connections
