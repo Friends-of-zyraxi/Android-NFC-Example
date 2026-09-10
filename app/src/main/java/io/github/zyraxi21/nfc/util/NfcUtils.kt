@@ -1,10 +1,10 @@
-package com.example.myapplication.util
+package io.github.zyraxi21.nfc.util
 
 import android.content.Context
 import android.content.Intent
 import android.nfc.NfcAdapter
 import android.provider.Settings
-import com.example.myapplication.R
+import io.github.zyraxi21.nfc.R
 
 fun checkNfcAvailability(
     context: Context,

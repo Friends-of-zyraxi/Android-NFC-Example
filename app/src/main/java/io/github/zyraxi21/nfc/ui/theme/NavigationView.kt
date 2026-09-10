@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.theme
+package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -35,7 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.R
+import io.github.zyraxi21.nfc.R
 import kotlinx.coroutines.launch
 
 enum class NavigationItem(
@@ -61,15 +61,9 @@ fun BottomNavigationApp(
 
     val navigationItems = listOf(NavigationItem.READ, NavigationItem.WRITE, NavigationItem.P2P)
 
-    // 滑动时同步底部导航
-    LaunchedEffect(pagerState.currentPage) {
-        selectedItemIndex = pagerState.currentPage
-    }
-    // 点击导航时同步 pager
-    LaunchedEffect(selectedItemIndex) {
-        if (selectedItemIndex != pagerState.currentPage) {
-            pagerState.animateScrollToPage(selectedItemIndex)
-        }
+    // 用户滑动 pager 结束后，同步底部导航高亮（用 settledPage 避免动画中间帧干扰）
+    LaunchedEffect(pagerState.settledPage) {
+        selectedItemIndex = pagerState.settledPage
     }
 
     Scaffold(

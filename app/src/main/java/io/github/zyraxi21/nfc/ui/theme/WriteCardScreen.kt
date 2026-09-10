@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.theme
+package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.myapplication.R
+import io.github.zyraxi21.nfc.R
 
 // =======================================================================
 // 写入状态：由 MainActivity 驱动，控制弹窗显示

@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.myapplication.ui.theme
+package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.R
+import io.github.zyraxi21.nfc.R
 
 enum class ConnectionState {
     DISCONNECTED, ADVERTISING, DISCOVERING, CONNECTING, CONNECTED
@@ -54,6 +54,15 @@ fun P2PScreen(
 
     LaunchedEffect(selectedType) {
         textInput = ""; wifiSsid = ""; wifiPassword = ""; btMac = ""; btName = ""
+    }
+
+    // 进入 P2P 页时若无权限，自动发起系统权限请求（只请求一次，避免反复弹窗）
+    var permissionRequested by remember { mutableStateOf(false) }
+    LaunchedEffect(hasPermissions) {
+        if (!hasPermissions && !permissionRequested) {
+            permissionRequested = true
+            onRequestPermissions()
+        }
     }
 
     fun buildFormattedMessage(): String = when (selectedType) {

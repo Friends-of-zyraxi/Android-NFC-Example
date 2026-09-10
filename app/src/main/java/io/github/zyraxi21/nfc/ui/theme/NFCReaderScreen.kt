@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.theme
+package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,8 +11,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.R
-import com.example.myapplication.util.checkNfcAvailability
+import io.github.zyraxi21.nfc.R
+import io.github.zyraxi21.nfc.util.checkNfcAvailability
 import kotlinx.coroutines.launch
 
 @Composable

@@ -1,10 +1,10 @@
-package com.example.myapplication
+package io.github.zyraxi21.nfc
 
 import android.content.Context
 import android.nfc.cardemulation.HostApduService
 import android.os.Bundle
 import android.util.Log
-import com.example.myapplication.util.HceDataStore
+import io.github.zyraxi21.nfc.util.HceDataStore
 
 /**
  * NFC Forum Type 4 Tag 的 Host Card Emulation 服务。

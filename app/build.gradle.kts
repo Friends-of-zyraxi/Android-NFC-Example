@@ -6,11 +6,11 @@ plugins {
 
 @Suppress("DEPRECATION")
 android {
-    namespace = "com.example.myapplication"
+    namespace = "io.github.zyraxi21.nfc"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "io.github.zyraxi21.nfc"
         minSdk = 34
         targetSdk = 37
         versionCode = 1

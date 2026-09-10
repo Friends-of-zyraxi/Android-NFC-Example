@@ -1,4 +1,4 @@
-package com.example.myapplication.util
+package io.github.zyraxi21.nfc.util
 
 import android.content.Context
 import android.util.Base64
@@ -7,7 +7,7 @@ import android.util.Base64
  * HCE 模拟数据的持久化存储。
  *
  * HCE 服务可能在应用进程被系统回收后由系统重新绑定启动，此时
- * [com.example.myapplication.MyHostApduService] 的静态字段已经丢失，
+ * [io.github.zyraxi21.nfc.MyHostApduService] 的静态字段已经丢失，
  * 读卡端会读到空内容。因此模拟数据在写入时同步落盘，并在服务被重新拉起时恢复。
  *
  * 数据以 Base64 字符串存放，避免 SharedPreferences 无法直接保存字节数组的限制。

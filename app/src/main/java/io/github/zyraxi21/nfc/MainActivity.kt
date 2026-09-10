@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
-package com.example.myapplication
+package io.github.zyraxi21.nfc
 
 import android.app.PendingIntent
 import android.bluetooth.BluetoothAdapter
@@ -31,16 +31,16 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 
-import com.example.myapplication.ui.theme.BottomNavigationApp
-import com.example.myapplication.ui.theme.ConnectionState
-import com.example.myapplication.ui.theme.MyApplicationTheme
-import com.example.myapplication.ui.theme.NFCReaderScreen
-import com.example.myapplication.ui.theme.P2PScreen
-import com.example.myapplication.ui.theme.WifiAuth
-import com.example.myapplication.ui.theme.WifiEncryption
-import com.example.myapplication.ui.theme.WriteCardScreen
-import com.example.myapplication.ui.theme.WriteDataType
-import com.example.myapplication.ui.theme.WriteState
+import io.github.zyraxi21.nfc.ui.theme.BottomNavigationApp
+import io.github.zyraxi21.nfc.ui.theme.ConnectionState
+import io.github.zyraxi21.nfc.ui.theme.MyApplicationTheme
+import io.github.zyraxi21.nfc.ui.theme.NFCReaderScreen
+import io.github.zyraxi21.nfc.ui.theme.P2PScreen
+import io.github.zyraxi21.nfc.ui.theme.WifiAuth
+import io.github.zyraxi21.nfc.ui.theme.WifiEncryption
+import io.github.zyraxi21.nfc.ui.theme.WriteCardScreen
+import io.github.zyraxi21.nfc.ui.theme.WriteDataType
+import io.github.zyraxi21.nfc.ui.theme.WriteState
 import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
 import kotlinx.coroutines.delay
@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
 
     // Nearby Connections 相关
     private lateinit var connectionsClient: ConnectionsClient
-    private val serviceId = "com.example.myapplication.P2P"
+    private val serviceId = "io.github.zyraxi21.nfc.P2P"
 
     // 读卡 UI 状态 (来自 ReadCard.kt)
     private var tagInfo by mutableStateOf("")
@@ -97,6 +97,10 @@ class MainActivity : ComponentActivity() {
     private var currentEndpointId: String? = null
     private var isBluetoothEnabled by mutableStateOf(false)
     private var isWiFiEnabled by mutableStateOf(false)
+
+    // 权限请求回调（由 Compose 侧注入）与待重试的 P2P 操作
+    private var requestNearbyPermissions: (() -> Unit)? = null
+    private var pendingP2PAction: (() -> Unit)? = null
     private var nearbyRadioWarning by mutableStateOf<String?>(null)
 
     private val bluetoothAdapter: BluetoothAdapter?
@@ -203,8 +207,13 @@ class MainActivity : ComponentActivity() {
                     if (hasNearbyPermissions) {
                         refreshNearbyRadioStatus()
                         showToast(getString(R.string.toast_permission_granted))
+                        // 授权成功后自动重试之前被拦截的 P2P 操作
+                        pendingP2PAction?.invoke()
+                        pendingP2PAction = null
                     }
                 }
+                // 注入到 Activity，供 startAdvertising / startDiscovery 调用
+                requestNearbyPermissions = { permLauncher.launch(nearbyPermissions) }
 
                 BottomNavigationApp(
                     readerScreen = {
@@ -905,7 +914,8 @@ class MainActivity : ComponentActivity() {
     // 启动广告模式
     private fun startAdvertising() {
         if (!checkNearbyPermissions()) {
-            showToast(getString(R.string.toast_permission_required))
+            pendingP2PAction = { startAdvertising() }
+            requestNearbyPermissions?.invoke()
             return
         }
         if (!ensureNearbyRadiosReady()) return
@@ -941,7 +951,8 @@ class MainActivity : ComponentActivity() {
     // 启动发现模式
     private fun startDiscovery() {
         if (!checkNearbyPermissions()) {
-            showToast(getString(R.string.toast_permission_required))
+            pendingP2PAction = { startDiscovery() }
+            requestNearbyPermissions?.invoke()
             return
         }
         if (!ensureNearbyRadiosReady()) return

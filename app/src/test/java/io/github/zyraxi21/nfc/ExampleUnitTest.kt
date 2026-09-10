@@ -1,4 +1,4 @@
-package com.example.myapplication
+package io.github.zyraxi21.nfc
 
 import org.junit.Test
 

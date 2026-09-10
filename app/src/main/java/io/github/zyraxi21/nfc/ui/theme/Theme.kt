@@ -1,6 +1,5 @@
-package com.example.myapplication.ui.theme
+package io.github.zyraxi21.nfc.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
