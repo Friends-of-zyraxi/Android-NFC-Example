@@ -23,17 +23,20 @@ enum class ConnectionState {
 
 @Composable
 fun P2PScreen(
-    isNfcEnabled: Boolean,
     connectionState: ConnectionState,
     receivedNearbyMessage: String,
+    isBluetoothEnabled: Boolean,
+    isWiFiEnabled: Boolean,
+    nearbyRadioWarning: String?,
     onMessageChange: (String) -> Unit,
+    onEnableBluetooth: () -> Unit,
+    onEnableWiFi: () -> Unit,
     onStartAdvertising: () -> Unit,
     onStopAdvertising: () -> Unit,
     onStartDiscovery: () -> Unit,
     onStopDiscovery: () -> Unit,
     onDisconnect: () -> Unit,
     onSendMessage: (String) -> Unit,
-    onEnableNfc: () -> Unit,
     hasPermissions: Boolean,
     onRequestPermissions: () -> Unit
 ) {
@@ -114,21 +117,47 @@ fun P2PScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // NFC 状态检查
-                if (!isNfcEnabled) {
-                    Text(
-                        text = stringResource(R.string.p2p_text_nfc_disabled),
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    Button(onClick = onEnableNfc) {
-                        Text(stringResource(R.string.p2p_button_enable_nfc))
+                // Nearby 无线装置引导：API 不再自动开启蓝牙 / Wi-Fi
+                nearbyRadioWarning?.let { message ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = message,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                if (!isBluetoothEnabled) {
+                                    Button(onClick = onEnableBluetooth) {
+                                        Text(stringResource(R.string.p2p_button_enable_bluetooth))
+                                    }
+                                }
+                                if (!isWiFiEnabled) {
+                                    Button(onClick = onEnableWiFi) {
+                                        Text(stringResource(R.string.p2p_button_enable_wifi))
+                                    }
+                                }
+                            }
+                        }
                     }
-                } else {
-                    // ========================================================
-                    // 根据连接状态展示不同内容
-                    // ========================================================
-                    when (connectionState) {
+                }
+
+                // ========================================================
+                // 根据连接状态展示不同内容
+                // ========================================================
+                when (connectionState) {
                         ConnectionState.DISCONNECTED -> {
                             Text(
                                 text = stringResource(R.string.p2p_label_select_mode),
@@ -393,7 +422,6 @@ fun P2PScreen(
                     }
                 }
             }
-        }
     }
 }
 

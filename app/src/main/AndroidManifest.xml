@@ -3,25 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools" >
 
     <uses-permission android:name="android.permission.NFC" />
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <!-- Nearby Connections 权限。minSdk = 34，API 31 以下的旧权限
+         （BLUETOOTH / BLUETOOTH_ADMIN / ACCESS_*_LOCATION / CHANGE_WIFI_STATE）已无生效场景，不再声明。 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- 读取 Wi-Fi 无线装置状态；普通权限，不触发运行时弹窗 -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
-
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
+    <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
-
-    <uses-feature
-        android:name="android.hardware.nfc.hce"
-        android:required="false" />
-
 
     <application
         android:allowBackup="true"
@@ -32,14 +26,7 @@
         android:roundIcon="@drawable/nfc_logo_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
-        tools:targetApi="36" >
-        <activity
-            android:name=".CardEmulationDeviceActivity"
-            android:exported="true"
-            android:label="@string/title_card_emulation_activity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.MyApplication" >
-        </activity>
+        tools:targetApi="37" >
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -72,6 +59,15 @@
                     android:scheme="https" />
             </intent-filter>
 
+            <!-- 本应用模拟卡携带的 MIME 记录 -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/com.example.myapplication" />
+            </intent-filter>
+
             <!-- ACTION_TECH_DISCOVERED -->
             <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
@@ -84,15 +80,6 @@
             <!-- ACTION_TAG_DISCOVERED -->
             <intent-filter>
                 <action android:name="android.nfc.action.TAG_DISCOVERED" />
-            </intent-filter>
-
-            <!-- ACTION_NDEF_DISCOVERED 文本过滤器 -->
-            <intent-filter>
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="application/com.example.myapplication" />
             </intent-filter>
         </activity>
 
@@ -107,47 +94,7 @@
             <meta-data
                 android:name="android.nfc.cardemulation.host_apdu_service"
                 android:resource="@xml/apduservice" />
-        </service> <!-- <activity -->
-        <!-- android:name=".ReadCard" -->
-        <!-- android:exported="true" -->
-        <!-- android:theme="@style/Theme.MyApplication"> -->
-        <!-- &lt;!&ndash; ACTION_NDEF_DISCOVERED 文本过滤器 &ndash;&gt; -->
-        <!-- <intent-filter> -->
-        <!-- <action android:name="android.nfc.action.NDEF_DISCOVERED" /> -->
-        <!-- <category android:name="android.intent.category.DEFAULT" /> -->
-        <!-- <data android:mimeType="text/plain" /> -->
-        <!-- </intent-filter> -->
-        <!-- &lt;!&ndash; URL 过滤器 &ndash;&gt; -->
-        <!-- <intent-filter> -->
-        <!-- <action android:name="android.nfc.action.NDEF_DISCOVERED" /> -->
-        <!-- <category android:name="android.intent.category.DEFAULT" /> -->
-        <!-- <data -->
-        <!-- android:host="developer.android.com" -->
-        <!-- android:pathPrefix="/index.html" -->
-        <!-- android:scheme="https" /> -->
-        <!-- </intent-filter> -->
-        <!-- &lt;!&ndash; ACTION_TECH_DISCOVERED &ndash;&gt; -->
-        <!-- <intent-filter> -->
-        <!-- <action android:name="android.nfc.action.TECH_DISCOVERED" /> -->
-        <!-- </intent-filter> -->
-        <!-- <meta-data -->
-        <!-- android:name="android.nfc.action.TECH_DISCOVERED" -->
-        <!-- android:resource="@xml/nfc_tech_filter" /> -->
-        <!-- &lt;!&ndash; ACTION_TAG_DISCOVERED &ndash;&gt; -->
-        <!-- <intent-filter> -->
-        <!-- <action android:name="android.nfc.action.TAG_DISCOVERED" /> -->
-        <!-- </intent-filter> -->
-        <!-- </activity> -->
-        <!-- <activity -->
-        <!-- android:name=".WriteCard" -->
-        <!-- android:exported="false" -->
-        <!-- android:theme="@style/Theme.MyApplication" /> &lt;!&ndash; 使用Compose主题 &ndash;&gt; -->
-        <activity
-            android:name=".P2PCommunication"
-            android:exported="true"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.MyApplication" >
-        </activity>
+        </service>
     </application>
 
 </manifest>

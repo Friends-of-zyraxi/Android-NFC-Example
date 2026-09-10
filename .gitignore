@@ -7,6 +7,10 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+# 本机 IDE 环境（JDK 版本、运行目标设备），不随仓库共享
+/.idea/compiler.xml
+/.idea/misc.xml
+/.idea/deploymentTargetSelector.xml
 .DS_Store
 /build
 /.vscode

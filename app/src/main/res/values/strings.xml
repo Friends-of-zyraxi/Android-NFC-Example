@@ -3,9 +3,8 @@
     <!-- 应用全局                                                             -->
     <!-- ================================================================== -->
     <string name="app_name">NFC 通信</string>
-    <string name="app_subtitle">基于 NFC 的多模式通信实践开发</string>
     <string name="app_title">基于 NFC 的多模式通信实践</string>
-    <string name="version_label">版本: 20260629</string>
+    <string name="version_label">版本: 20260910</string>
 
     <!-- ================================================================== -->
     <!-- 底部导航栏                                                           -->
@@ -35,12 +34,8 @@
     <string name="msg_nfc_unavailable">该设备不支持 NFC 功能</string>
     <string name="msg_nfc_not_enabled">请先在设置中启用 NFC 功能</string>
     <string name="msg_nfc_ready">NFC 功能已准备就绪</string>
-    <string name="msg_device_no_nfc">设备不支持NFC</string>
-    <string name="msg_no_tag_found">未发现NFC标签</string>
-    <string name="msg_read_failed">读取标签失败</string>
     <string name="msg_parse_error">解析错误</string>
     <string name="msg_invalid_uri">无效URI</string>
-    <string name="msg_unsupported_type">暂未支持此类型</string>
     <string name="msg_unknown">未知</string>
     <string name="msg_unknown_well_known">未知Well Known类型</string>
     <string name="msg_unknown_app">未知应用</string>
@@ -80,7 +75,6 @@
     <!-- 写卡页                                                               -->
     <!-- ================================================================== -->
     <string name="title_write_card">写入 NFC 标签</string>
-    <string name="title_write_activity">写卡</string>
     <string name="button_write_tag">写入标签</string>
     <string name="button_card_emulation">卡模拟</string>
 
@@ -122,10 +116,6 @@
     <string name="status_write_failed">写入失败: %1$s</string>
 
     <string name="msg_tag_not_ndef">该标签不支持 NDEF 或无法格式化</string>
-    <string name="msg_tag_not_writable">标签不可写</string>
-    <string name="msg_content_too_large">内容超出标签容量</string>
-    <string name="msg_tag_no_ndef_write">标签不支持NDEF写入</string>
-    <string name="msg_cannot_format_tag">无法格式化标签</string>
     <string name="format_type_label">类型：%1$s</string>
 
     <!-- ================================================================== -->
@@ -176,15 +166,15 @@
     <!-- ================================================================== -->
     <string name="hce_service_desc">NFC 多模式通信 - 卡模拟服务</string>
     <string name="hce_aid_desc">NFC 标签模拟（文本/网址/Wi-Fi/蓝牙）</string>
-    <string name="title_card_emulation_activity">CardEmulationDeviceActivity</string>
 
     <!-- ================================================================== -->
     <!-- P2P 端对端                                                           -->
     <!-- ================================================================== -->
-    <string name="p2p_title">NFC P2P通信</string>
+    <string name="p2p_title">P2P通信（Nearby Connections）</string>
     <string name="p2p_device_name">P2P Device</string>
-    <string name="p2p_text_nfc_disabled">NFC功能未启用</string>
-    <string name="p2p_button_enable_nfc">启用NFC</string>
+    <string name="p2p_text_radio_disabled">蓝牙和 Wi-Fi 均未开启。Nearby Connections 将不再自动打开无线装置，请先手动开启蓝牙或 Wi-Fi 后重试。</string>
+    <string name="p2p_button_enable_bluetooth">开启蓝牙</string>
+    <string name="p2p_button_enable_wifi">开启 Wi-Fi</string>
     <string name="p2p_label_select_mode">选择连接模式</string>
     <string name="p2p_button_discover">用户 1</string>
     <string name="p2p_button_advertise">用户 2</string>
@@ -197,13 +187,7 @@
     <string name="p2p_button_disconnect">断开连接</string>
     <string name="p2p_label_received">接收到的消息</string>
     <string name="p2p_placeholder_waiting">等待接收消息…</string>
-    <string name="p2p_label_send">发送消息</string>
-    <string name="p2p_label_message_input">输入要发送的消息</string>
     <string name="p2p_button_send">发送</string>
-    <string name="p2p_text_beam_active">发送模式已激活 - 准备发送消息</string>
-    <string name="p2p_text_beam_instructions">使用说明：\n1. 输入消息并点击\'激活发送\'\n2. 将设备背靠背靠近另一台设备\n3. 触摸屏幕发送消息</string>
-    <string name="p2p_button_activate_beam">激活发送</string>
-    <string name="p2p_button_stop_beam">停止发送</string>
 
     <!-- P2P - Toast / Snackbar -->
     <string name="toast_permission_required">请先授予位置和附近设备权限</string>
@@ -219,26 +203,13 @@
     <string name="toast_advertising_stopped">广告已停止</string>
     <string name="toast_discovery_started">Nearby发现已启动，正在扫描附近设备…</string>
     <string name="toast_message_sent">消息发送成功</string>
-    <string name="toast_beam_message_sent">消息已发送</string>
-    <string name="toast_new_message_received">收到新消息</string>
-    <string name="toast_device_no_nfc">设备不支持NFC</string>
-    <string name="toast_enable_nfc">请启用NFC功能</string>
-    <string name="toast_tag_not_ndef">标签不支持NDEF格式</string>
-    <string name="toast_write_success">写入成功</string>
-    <string name="toast_hce_no_nfc">此设备不支持NFC</string>
-    <string name="toast_hce_enable_nfc">请先在系统设置中启用NFC</string>
-    <string name="toast_hce_ready">卡片模拟已准备就绪。请将设备靠近读取器。</string>
-    <string name="toast_hce_stopped">卡片模拟已停止。</string>
-    <string name="toast_hce_nfc_off">NFC已关闭，卡片模拟可能无法工作。</string>
 
     <!-- P2P - 格式化（Toast/Snackbar 带参数） -->
-    <string name="format_write_failed">写入失败: %1$s</string>
     <string name="format_advertising_failed">广告启动失败: %1$s</string>
     <string name="format_discovery_failed">发现启动失败: %1$s</string>
     <string name="format_message_send_failed">消息发送失败: %1$s</string>
     <string name="format_connection_request_failed">连接请求失败: %1$s</string>
-    <string name="format_beam_unavailable">NFC 功能不可用: %1$s</string>
 
     <!-- P2P - 权限（UI 卡片） -->
-    <string name="p2p_text_permission_required">需要位置和附近设备权限</string>
+    <string name="p2p_text_permission_required">需要附近设备权限；使用 Android 17 及以上系统时，还需要本地网络权限。</string>
 </resources>
