@@ -144,3 +144,26 @@
 - 卡模拟读取协议自 2026-09 版起改为带偏移量的分块读取，**收发两端需安装同一版本**，跨版本可能取到错位数据。
 - 应用声明 BLE 为必需硬件，且 minSdk 为 34，仅支持 Android 14 及以上、带蓝牙 BLE 的设备。
 - 读卡 / 写卡 / 卡模拟均需真机与实体标签测试，模拟器与不支持 NFC 的设备无法使用相关功能。
+
+---
+
+## 许可证
+
+本项目以 **GNU General Public License v3.0**（GPL-3.0）发布，完整条款见根目录的 [LICENSE](LICENSE)。
+
+你可以自由使用、修改和再分发本项目，但**衍生作品必须同样以 GPLv3 开放源代码**，并保留原有的版权声明。
+
+### 第三方依赖
+
+构建时引用的第三方组件及其许可证：
+
+| 依赖 | 许可证 |
+| --- | --- |
+| AndroidX（core-ktx、appcompat、lifecycle、navigation、activity-compose 等） | Apache-2.0 |
+| Jetpack Compose（ui、material3、ui-tooling） | Apache-2.0 |
+| Material Components for Android | Apache-2.0 |
+| ConstraintLayout / ConstraintLayout Compose | Apache-2.0 |
+| Kotlin 标准库 | Apache-2.0 |
+| Google Play services — Nearby Connections | 闭源专有，受 [Google APIs 服务条款](https://developers.google.com/terms) 约束 |
+
+除 Nearby Connections 外的组件均为 Apache-2.0，与 GPLv3 兼容。Nearby Connections 属于闭源专有组件，不在本项目源码的许可范围内，其使用需另行遵守 Google 的条款。
