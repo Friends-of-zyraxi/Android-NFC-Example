@@ -53,7 +53,7 @@ fun P2PScreen(
     var textInput by remember { mutableStateOf("") }
     var wifiSsid by remember { mutableStateOf("") }
     var wifiPassword by remember { mutableStateOf("") }
-    var wifiEncryption by remember { mutableStateOf(WifiEncryption.WPA2_AES) }
+    var wifiEncryption by remember { mutableStateOf(WifiEncryption.AES) }
     var wifiAuth by remember { mutableStateOf(WifiAuth.WPA2_PSK) }
     var btMac by remember { mutableStateOf("") }
     var btName by remember { mutableStateOf("") }

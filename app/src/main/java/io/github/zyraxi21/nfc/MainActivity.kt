@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
     // Wi-Fi 写入数据
     var wifiSsid by mutableStateOf("")
     var wifiPassword by mutableStateOf("")
-    var wifiEncryption by mutableStateOf(WifiEncryption.WPA2_AES)
+    var wifiEncryption by mutableStateOf(WifiEncryption.AES)
     var wifiAuth by mutableStateOf(WifiAuth.WPA2_PSK)
 
     // 蓝牙写入数据
@@ -587,19 +587,21 @@ class MainActivity : ComponentActivity() {
                 0x1045 -> sb.appendLine(getString(R.string.format_ssid, String(data)))
                 0x1027 -> sb.appendLine(getString(R.string.format_wifi_password, String(data)))
                 0x1003 -> {
-                    if (data.size >= 2) {
-                        val encryptionType = ((data[0].toInt() and 0xFF) shl 8) or (data[1].toInt() and 0xFF)
-                        sb.appendLine(getString(R.string.format_encryption_type, getEncryptionTypeName(encryptionType)))
-                    } else {
-                        sb.appendLine(getString(R.string.msg_encryption_data_short))
-                    }
-                }
-                0x100F -> {
+                    // WSC 属性 0x1003 = Authentication Type（认证类型）
                     if (data.size >= 2) {
                         val authType = ((data[0].toInt() and 0xFF) shl 8) or (data[1].toInt() and 0xFF)
                         sb.appendLine(getString(R.string.format_auth_type, getAuthTypeName(authType)))
                     } else {
                         sb.appendLine(getString(R.string.msg_auth_data_short))
+                    }
+                }
+                0x100F -> {
+                    // WSC 属性 0x100F = Encryption Type（加密类型）
+                    if (data.size >= 2) {
+                        val encryptionType = ((data[0].toInt() and 0xFF) shl 8) or (data[1].toInt() and 0xFF)
+                        sb.appendLine(getString(R.string.format_encryption_type, getEncryptionTypeName(encryptionType)))
+                    } else {
+                        sb.appendLine(getString(R.string.msg_encryption_data_short))
                     }
                 }
                 0x1020 -> sb.appendLine(getString(R.string.format_mac_address, data.toMacAddress()))
@@ -659,6 +661,7 @@ class MainActivity : ComponentActivity() {
     private fun ByteArray.toMacAddress(): String = joinToString(":") { "%02X".format(it) }
     private fun ByteArray.toHexString(): String = joinToString("") { "%02X".format(it) }
 
+    /** WSC Authentication Type（属性 0x1003）取值 → 名称，取值见 Wi-Fi Simple Configuration 规范 */
     private fun getAuthTypeName(value: Int): String = when(value) {
         0x0001 -> getString(R.string.auth_open_system)
         0x0002 -> getString(R.string.auth_wpa_psk)
@@ -666,16 +669,19 @@ class MainActivity : ComponentActivity() {
         0x0008 -> getString(R.string.auth_wpa_eap)
         0x0010 -> getString(R.string.auth_wpa2_eap)
         0x0020 -> getString(R.string.auth_wpa2_psk)
+        0x0022 -> getString(R.string.auth_wpa_wpa2_psk)
         0x0040 -> getString(R.string.auth_wpa3_sae)
+        0x0080 -> getString(R.string.auth_wpa3_eap)
         else -> getString(R.string.format_unknown_auth, value)
     }
 
+    /** WSC Encryption Type（属性 0x100F）取值 → 名称，取值见 Wi-Fi Simple Configuration 规范 */
     private fun getEncryptionTypeName(value: Int): String = when(value) {
         0x0001 -> getString(R.string.enc_none)
-        0x0002, 0x0022 -> getString(R.string.enc_wep)
+        0x0002 -> getString(R.string.enc_wep)
         0x0004 -> getString(R.string.enc_tkip)
-        0x0008, 0x0020 -> getString(R.string.enc_aes)
-        0x0010 -> getString(R.string.enc_aes_tkip)
+        0x0008 -> getString(R.string.enc_aes)
+        0x000C -> getString(R.string.enc_aes_tkip)
         else -> getString(R.string.format_unknown_encryption, value)
     }
 

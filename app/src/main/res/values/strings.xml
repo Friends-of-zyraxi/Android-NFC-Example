@@ -140,6 +140,8 @@
     <string name="auth_wpa2_eap">WPA2-EAP</string>
     <string name="auth_wpa2_psk">WPA2-PSK</string>
     <string name="auth_wpa3_sae">WPA3-SAE</string>
+    <string name="auth_wpa_wpa2_psk">WPA/WPA2-PSK</string>
+    <string name="auth_wpa3_eap">WPA3-EAP</string>
 
     <!-- 加密类型（parse 显示用） -->
     <string name="enc_none">无</string>
@@ -147,13 +149,6 @@
     <string name="enc_tkip">TKIP</string>
     <string name="enc_aes">AES</string>
     <string name="enc_aes_tkip">AES/TKIP</string>
-
-    <!-- 加密类型（UI 下拉框用） -->
-    <string name="encryption_none">无</string>
-    <string name="encryption_wep">WEP</string>
-    <string name="encryption_wpa_tkip">WPA (TKIP)</string>
-    <string name="encryption_wpa2_aes">WPA2 (AES)</string>
-    <string name="encryption_wpa3_sae">WPA3 (SAE)</string>
 
     <!-- 认证类型（UI 下拉框用） -->
     <string name="auth_open">开放</string>

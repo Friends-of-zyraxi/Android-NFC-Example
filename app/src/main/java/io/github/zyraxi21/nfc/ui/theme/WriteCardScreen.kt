@@ -41,17 +41,21 @@ enum class WriteDataType(val labelResId: Int) {
     BLUETOOTH(R.string.data_type_bluetooth)
 }
 
-// =======================================================================
-// Wi-Fi 加密/认证枚举（与 WSC 规范兼容）
-// =======================================================================
+/**
+ * Wi-Fi 加密类型，对应 WSC 属性 0x100F（Encryption Type）。
+ * 这里只描述"加密算法"，认证方式（WPA/WPA2/WPA3）属于 [WifiAuth]。
+ */
 enum class WifiEncryption(val displayResId: Int, val wscValue: Int) {
-    NONE(R.string.encryption_none, 0x0001),
-    WEP(R.string.encryption_wep, 0x0002),
-    WPA_TKIP(R.string.encryption_wpa_tkip, 0x0004),
-    WPA2_AES(R.string.encryption_wpa2_aes, 0x0020),
-    WPA3_SAE(R.string.encryption_wpa3_sae, 0x0040)
+    NONE(R.string.enc_none, 0x0001),
+    WEP(R.string.enc_wep, 0x0002),
+    TKIP(R.string.enc_tkip, 0x0004),
+    AES(R.string.enc_aes, 0x0008),
+    AES_TKIP(R.string.enc_aes_tkip, 0x000C)
 }
 
+/**
+ * Wi-Fi 认证类型，对应 WSC 属性 0x1003（Authentication Type）。
+ */
 enum class WifiAuth(val displayResId: Int, val wscValue: Int) {
     OPEN(R.string.auth_open, 0x0001),
     WPA_PSK(R.string.auth_wpa_psk_short, 0x0002),
@@ -116,7 +120,7 @@ fun WriteCardScreen(
     // ----- Wi-Fi 表单 -----
     var wifiSsid by remember { mutableStateOf("") }
     var wifiPassword by remember { mutableStateOf("") }
-    var wifiEncryption by remember { mutableStateOf(WifiEncryption.WPA2_AES) }
+    var wifiEncryption by remember { mutableStateOf(WifiEncryption.AES) }
     var wifiAuth by remember { mutableStateOf(WifiAuth.WPA2_PSK) }
 
     // ----- 蓝牙表单 -----
