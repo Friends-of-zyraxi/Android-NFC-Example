@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.microsoft.fluentui.theme.ThemeMode
 import com.microsoft.fluentui.theme.token.AliasTokens
 import com.microsoft.fluentui.theme.token.FluentAliasTokens
+import com.microsoft.fluentui.theme.token.FluentGlobalTokens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -266,6 +267,59 @@ class ThemeContrastTest {
             textPrimary(ThemeMode.Dark),
             tabBackground,
             4.5
+        )
+    }
+
+    @Test
+    fun `Snackbar 底色与文字在两种模式下都能读出`() {
+        // Snackbar 由本工程自绘（Fluent 的组件把圆角硬编码成 8dp，且时长逻辑是 internal），
+        // 底色取 NeutralBackground4，文字取次级前景色。
+        val snackbarSurfaceLight = neutralBackground(
+            FluentAliasTokens.NeutralBackgroundColorTokens.Background4,
+            ThemeMode.Light
+        )
+        val snackbarSurfaceDark = neutralBackground(
+            FluentAliasTokens.NeutralBackgroundColorTokens.Background4,
+            ThemeMode.Dark
+        )
+
+        assertContrast(
+            "Snackbar 文字 / Snackbar 底色（浅色）",
+            textSecondary(ThemeMode.Light),
+            snackbarSurfaceLight,
+            4.5
+        )
+        assertContrast(
+            "Snackbar 文字 / Snackbar 底色（深色）",
+            textSecondary(ThemeMode.Dark),
+            snackbarSurfaceDark,
+            4.5
+        )
+
+        // Snackbar 浮在画布之上，两者必须有可分辨的色差，否则看不出是浮层
+        assertTrue(
+            "浅色模式 Snackbar 底色 ${snackbarSurfaceLight.toHex()} 与画布" +
+                "${canvas(ThemeMode.Light).toHex()} 过于接近",
+            snackbarSurfaceLight != canvas(ThemeMode.Light)
+        )
+        assertTrue(
+            "深色模式 Snackbar 底色 ${snackbarSurfaceDark.toHex()} 与画布" +
+                "${canvas(ThemeMode.Dark).toHex()} 过于接近",
+            snackbarSurfaceDark != canvas(ThemeMode.Dark)
+        )
+    }
+
+    // ---------------------------------------------------------------
+    // 形状
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `全应用圆角只有 16dp 一个值`() {
+        // 统一成一个值，任何新控件引用 FluentShapes.radius 就自动与既有界面一致
+        assertEquals(
+            "圆角被改成非 16dp",
+            FluentGlobalTokens.CornerRadiusTokens.CornerRadius160.value,
+            FluentShapes.radius
         )
     }
 

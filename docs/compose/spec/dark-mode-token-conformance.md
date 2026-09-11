@@ -10,9 +10,9 @@ commits: HEAD
 
 ## Report
 
-**What was built** — 新增 `ui/theme/DesignTokens.kt` 作为 Fluent 2 设计令牌在本工程的唯一入口，把颜色、排版、间距、形状、高度、动效全部收敛成语义令牌；**所有文本一律走 `FluentText`，颜色在组合期就被显式写进 `TextStyle`，不再依赖 `LocalContentColor`**；顶栏底色改为品牌色（浅色）与中性表面（深色）；三页布局统一走 `PageColumn` 的响应式外边距，文字全部居中；文本输入框通过自定义 `TextFieldTokens` + 外层 `Surface` 实现圆角。新增 `ThemeContrastTest`（13 个用例）把 WCAG 对比度与色阶亮度基准写成断言。
+**What was built** — 新增 `ui/theme/DesignTokens.kt` 作为 Fluent 2 设计令牌在本工程的唯一入口，把颜色、排版、间距、形状、高度、动效全部收敛成语义令牌；**所有文本一律走 `FluentText`，颜色在组合期就被显式写进 `TextStyle`，不再依赖 `LocalContentColor`**；顶栏底色改为品牌色（浅色）与中性表面（深色）；三页布局统一走 `PageColumn` 的响应式外边距，文字全部居中；文本输入框通过自定义 `TextFieldTokens` + 外层 `Surface` 实现圆角；全应用圆角统一为 16dp；Snackbar 自绘以统一圆角与间距。新增 `ThemeContrastTest`（15 个用例）把 WCAG 对比度与色阶亮度基准写成断言。
 
-**Verification** — `./gradlew :app:assembleDebug` BUILD SUCCESSFUL；`./gradlew :app:testDebugUnitTest` 13/13 通过；`./gradlew :app:lintDebug` BUILD SUCCESSFUL，0 error，新增 0 条告警（33 条均为既有的依赖版本提示与模板遗留资源）。无模拟器可用，深色模式的实际观感仍需真机确认。
+**Verification** — `./gradlew :app:assembleDebug` BUILD SUCCESSFUL；`./gradlew :app:testDebugUnitTest` 15/15 通过；`./gradlew :app:lintDebug` BUILD SUCCESSFUL，0 error，新增 0 条告警（33 条均为既有的依赖版本提示与模板遗留资源）。无模拟器可用，深色模式的实际观感仍需真机确认。
 
 **Journey log** — 踩坑记录：
 
@@ -86,23 +86,68 @@ commits: HEAD
 
 ### 圆角统一
 
-全应用只保留**两档**圆角，避免同一屏出现多种圆角拼在一起的杂乱感：
+全应用**只有一个圆角值**：`FluentShapes.radius = 16dp`（Fluent `CornerRadius160`）。按钮、输入框、下拉选择框、卡片、菜单浮层、对话框、Snackbar 全部引用它。
 
-| 令牌 | 值 | 适用范围 |
-|---|---|---|
-| `FluentShapes.control` | 12dp（Fluent `CornerRadius120`） | 按钮、文本输入框、下拉选择框 |
-| `FluentShapes.container` | 16dp（Fluent `CornerRadius160`） | 卡片、菜单浮层、对话框 |
+保持单一值而不是分档：同一屏出现 12dp 与 16dp 反而显得不齐；统一后任何新控件只要引用 `radius` 就自动与既有界面一致。48dp 高的控件用 16dp 圆角仍在矩形控件范围内，不会趋近胶囊形（胶囊形需要半径达到高度的一半，即 24dp）。
 
-控件高度只有 48dp 左右，圆角再大就会趋近胶囊形、失去矩形控件的识别度，所以 `control` 比 `container` 小一档；除此之外**不再新增档位**。Fluent 默认值是按钮 4dp / 菜单 8dp / 卡片 12dp，这里刻意整体放大。
-
-实现上，Fluent 的控件圆角都由各自的 `*Tokens` 提供，且 `Button` / `BasicCard` / `Menu` 都没有直接传 `shape` 的参数，因此在 `DesignTokens.kt` 里为每个控件准备"只改圆角"的令牌实例，并包一层同名 `Fluent*` 组件：
+Fluent 默认值是按钮 4dp / 菜单 8dp / 卡片 12dp，这里整体放大。部分控件无法通过参数指定圆角，因此在 `DesignTokens.kt` 里为每个控件覆写 `cornerRadius` 令牌，并包一层同名 `Fluent*` 组件：
 
 - `FluentButton` → 覆写 `ButtonTokens.cornerRadius`
 - `FluentCard` → 覆写 `BasicCardTokens.cornerRadius`
 - `FluentDropdownMenu` → 覆写 `MenuTokens.cornerRadius`
-- `FluentTextField` → 外层 `Surface` 的 `RoundedCornerShape`（Fluent 的 `TextFieldTokens` 根本没有圆角令牌）
+- `FluentTextField` → 外层 `Surface` 的 `RoundedCornerShape`（`TextFieldTokens` 没有圆角令牌）
+- `FluentSnackbarHost` → 完全自绘，原因见下
 
 **不用自定义 `ControlTokens` 整套替换主题**：`FluentTheme` 的文档明确写着「若同时显式提供 `aliasTokens` 与 `controlTokens`，`FluentTheme` 不再触发 Fluent Control 的更新」，那会牺牲运行期换肤能力。按控件传 tokens 是官方支持、影响面最小的方式。
+
+### Snackbar：自绘宿主
+
+Fluent 的 `Snackbar` 组件**无法**满足统一圆角与间距的要求，因此改为自绘：
+
+1. 它的圆角在内部硬编码为 `RoundedCornerShape(8.dp)`，而 `SnackBarTokens` 里没有任何圆角令牌，无法通过 token 改；
+2. 负责时长与超时逻辑的 `NotificationContainer` 是 `internal`，外部拿不到，所以也不能"自己画外层、复用内层"来绕过；
+3. 它在根布局里自带 `padding(horizontal = 16.dp)`，外挂背景会与内容错位。
+
+好在 `SnackbarState.currentSnackbar` 与 `SnackbarMetadata` 都是**公开** API（含 `clicked()` / `dismiss()` / `timedOut()` 与 `duration`），于是 `FluentSnackbarHost` 直接用自己的 `Surface` 渲染，圆角、间距、配色全部走语义令牌；时长与无障碍超时沿用 Fluent 的 `NotificationDuration.convertToMillis`，行为不退化。
+
+间距方面：`Scaffold` 会把 `snackbarHost` 槽位紧贴在底栏上沿（`layoutHeight - snackbarHeight - bottomBarHeight`），原本与底栏粘在一起；现在由 `FluentSpacing.snackbarBottomSpacing = 16dp` 让出空隙，左右再各让一个页面外边距，与页面内容对齐。
+
+### 底栏：自实现点击区
+
+原先底栏直接用 Fluent 的 `TabBar`，手势条那一段的点击与涟漪反馈到不了屏幕底部，按下去能明显看出白色手势条是脱开的。
+
+**先后试过三种在 `TabBar` 上打补丁的做法，都不成立**：
+
+1. `TabBar` + `Spacer(navigationBarsPadding())`：手势条区域虽然被同色填充，但它不属于任何 `TabItem`；
+2. 给 `TabBar` 加 `navigationBarsPadding()`：`TabBar` 内部的 `Row` 是 `Modifier.fillMaxWidth()`，**没有等高**，`TabItem` 的 `weight(1F)` 在 `Row` 里只分配宽度，高度仍是内容高度——`padding` 只是在 `Column` 里多出一段空白，点击区并没有跟着下去；
+3. 给 `TabBar` 设更大的固定高度：`Row` 同样不会跟着长高。
+
+根因是 Fluent 的 `TabItem` 高度完全由内容决定，且 `TabBar` 不暴露 `TabItem` 的 modifier。因此**底栏改为自实现**：
+
+- 每个 Tab 是一个 `fillMaxHeight` 的点击区，高度 = 顶部留白 + 图标 + 文字 + `WindowInsets.navigationBars`，点击与涟漪铺满整块并一直延伸到屏幕底部；
+- 图标与文字下方用 `Spacer(navigationBarsPadding())` 撑出手势条区域，这段与 Tab **同一背景色**，视觉上背景是连通的，不会有"图标区一块、手势条一块"的割裂感；
+- inset 由 `WindowInsets.navigationBars` 换算，不硬编码手势条高度，三键导航同样成立；
+- 配色沿用原 `TabBar` 的语义：容器用 `AppTheme.surface`（Fluent 的 `TabItem` 未选中项背景也是 `NeutralBackground1`），未选中文字/图标用次级前景色，选中用品牌色，顶部保留 1dp 描边。
+
+### 自实现控件必须显式提供点击涟漪
+
+底栏改成自实现后一度完全没有点击反馈。原因不是布局，而是 `Modifier.clickable` 在不传 `indication` 时会取 `LocalIndication.current`，而本工程的主题栈（`FluentTheme` + 一个 Material3 的 `CompositionLocalProvider`）并不会把涟漪装进这个 CompositionLocal。
+
+Fluent 的组件之所以没暴露这个问题，是因为它们**全部**显式传了 `rememberRipple()`——`Button.kt`、`TabItem.kt`、`ListItem.kt` 等十个文件都 import 了 `androidx.compose.material.ripple.rememberRipple`。
+
+因此本工程凡是自实现的可点击控件，都必须写成：
+
+```kotlin
+Modifier.clickable(
+    indication = rememberRipple(color = AppTheme.ripple),
+    interactionSource = remember { MutableInteractionSource() },
+    onClick = onClick
+)
+```
+
+涟漪色由 `AppTheme.ripple` 提供（浅色黑 / 深色白，与 Fluent `TabItemTokens.rippleColor` 一致），不硬编码颜色。
+
+当前涉及两处：`FluentDropdownItem`（下拉选项）与 `BottomTab`（底栏 Tab）。刻意的例外是 `P2PScreen` / `WriteCardScreen` 里用于"点空白处收起键盘"的整页 `clickable`，它们显式传 `indication = null`——这类背景触摸目标不该有涟漪。
 
 ### 下拉浮层宽度对齐
 
@@ -119,7 +164,7 @@ Fluent 的 `Menu` 浮层宽度取自**内容固有宽度**（`MenuContent` 内�
 - 间距全部取自 4px 基准的 Fluent 间距阶梯。
 - **所有文本居中**，由 `FluentText(centered = true)` 默认开启；需要靠左时显式传 `centered = false`。
 - 排版固定为「顶栏 `Title3`(16sp) → 页面 `Title3`(16sp) → 正文 `Body1`/`Body2` → 说明 `Caption1`」，禁止只改 `fontSize` 不配行高。
-- 所有圆角只用两档（见下文「圆角统一」）。
+- 所有圆角只用 `FluentShapes.radius` 一个值（见下文「圆角统一」）。
 
 ### 文本与输入框的实现约定
 
@@ -137,9 +182,9 @@ Fluent 的 `Menu` 浮层宽度取自**内容固有宽度**（`MenuContent` 内�
 
 | 文件 | 改动 |
 |---|---|
-| `ui/theme/DesignTokens.kt` | 新增：令牌层（颜色/排版/间距/形状/高度/动效）+ `FluentText`、`FluentTextField`、`FluentButton`、`FluentCard`、`FluentDropdown`、`PageColumn` |
+| `ui/theme/DesignTokens.kt` | 新增：令牌层（颜色/排版/间距/形状/高度/动效）+ `FluentText`、`FluentTextField`、`FluentButton`、`FluentCard`、`FluentDropdown`、`FluentSnackbarHost`、`PageColumn` |
 | `ui/theme/Theme.kt` | 移除固定黑白前景色；品牌色阶改为按官方亮度分布展开 |
-| `ui/theme/NavigationView.kt` | 顶栏改用 `AppTheme.brandSurface`（浅色品牌色 / 深色中性）+ 居中文字 |
+| `ui/theme/NavigationView.kt` | 顶栏改用 `AppTheme.brandSurface`（浅色品牌色 / 深色中性）+ 居中文字；底栏自实现以延伸点击区 |
 | `ui/theme/NFCReaderScreen.kt` | 改用 `PageColumn` + `FluentText`；卡片内部滚动；边距加大 |
 | `ui/theme/WriteCardScreen.kt` | 同上；输入框改 `FluentTextField`（圆角）；失败提示用 `AppTheme.danger` |
 | `ui/theme/P2PScreen.kt` | 同上；成功态用 `AppTheme.success`；菜单行 48dp 且居中 |
@@ -150,7 +195,7 @@ Fluent 的 `Menu` 浮层宽度取自**内容固有宽度**（`MenuContent` 内�
 | `res/values-v23/themes.xml` | 删除（主题叠加交由 DayNight 限定符） |
 | `res/values/colors.xml` | 精简为 `fluent_canvas` |
 | `res/drawable/edittext_background.xml` | 删除（硬编码白底，已无引用） |
-| `test/.../ThemeContrastTest.kt` | 新增：13 个对比度与色阶基准回归用例 |
+| `test/.../ThemeContrastTest.kt` | 新增：15 个对比度、形状与色阶基准回归用例 |
 
 ## [S3] Out of Scope
 
@@ -166,8 +211,10 @@ Fluent 的 `Menu` 浮层宽度取自**内容固有宽度**（`MenuContent` 内�
 - [x] T2: 文本颜色显式化 — acceptance: 无任何文本依赖 `LocalContentColor`，全走 `FluentText` (covers: S1)
 - [x] T3: 顶栏品牌色 — acceptance: 浅色白字/品牌底色 ≥ 4.5:1，深色模式顶栏亮度 < 0.10 (covers: S1)
 - [x] T4: 布局规范化 — acceptance: 外边距 ≥ 24dp、文字全部居中、交互元素 ≥ 48dp (covers: S2)
-- [x] T5: 圆角统一 — acceptance: 全应用只有 12dp(控件) / 16dp(容器) 两档圆角，无散落的其他值 (covers: S2)
+- [x] T5: 圆角统一 — acceptance: 全应用只有 `FluentShapes.radius` = 16dp 一个值，无散落的其他值 (covers: S2)
 - [x] T6: 下拉浮层与按钮对齐 — acceptance: 浮层宽度等于触发按钮实测宽度，无硬编码宽度 (covers: S2)
-- [x] T7: 窗口主题与 edge-to-edge — acceptance: 系统栏图标明暗跟随应用主题 (covers: S2)
-- [x] T8: 对比度回归测试 — acceptance: 13 个用例全绿，覆盖正文/顶栏/底栏/品牌色阶亮度基准 (covers: S1)
-- [x] T9: 全量构建与 lint — acceptance: `assembleDebug` + `testDebugUnitTest` + `lintDebug` 全部成功 (covers: S2)
+- [x] T7: Snackbar 自绘 — acceptance: 16dp 圆角、与底栏留 16dp 间距、文字对比度 ≥ 4.5:1 (covers: S2)
+- [x] T8: 底栏自实现 — acceptance: Tab 的 clickable 与涟漪覆盖到屏幕底部，图标文字仍在手势条上方 (covers: S2)
+- [x] T9: 窗口主题与 edge-to-edge — acceptance: 系统栏图标明暗跟随应用主题 (covers: S2)
+- [x] T10: 对比度回归测试 — acceptance: 15 个用例全绿，覆盖正文/顶栏/底栏/Snackbar/圆角/品牌色阶亮度基准 (covers: S1)
+- [x] T11: 全量构建与 lint — acceptance: `assembleDebug` + `testDebugUnitTest` + `lintDebug` 全部成功 (covers: S2)
