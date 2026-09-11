@@ -101,8 +101,8 @@
 
 - 服务：`MyHostApduService`（继承 `HostApduService`）
 - 注册的 AID（`res/xml/apduservice.xml`，类别 `other`）：
-  - `F012345678` —— 私有 AID，**与自家读卡端通信的实际通路**
-  - `D2760000850101` —— NFC Forum Type 4 标签标准 AID，仅用于兼容其它厂商机型
+  - `F012345678` —— 私有 AID，**与自家读卡端通信的主通路**：读卡端首个 `SELECT` 用的就是它，因为它在控制器路由表中稳定指向 host
+  - `D2760000850101` —— NFC Forum Type 4 标签标准 AID，作为**回退通路**保留。注意部分机型的路由表里它存在一条**指向 SE 的同名条目且排序在前**，若用它发起会话会被 SE 抢答并锁死整条 ISO-DEP 会话
 - 模拟文件结构：CC 文件 `E103`（Capability Container）、NDEF 文件 `E104`（含 2 字节 NLEN 长度域，只读模拟，Write Access = Never）
 
 支持的 APDU 命令：
@@ -142,7 +142,7 @@
 - Nearby Connections 从 2026 年底起不再自动开启 Wi-Fi / 蓝牙；应用会在启动广播或发现前检查无线装置，并在关闭时引导用户手动开启。
 - 早期的独立 Activity 实现（`ReadCard.kt`、`WriteCard.kt`、`CardEmulationDeviceActivity`、`P2PCommunication.kt`）已全部清理，读写卡与卡模拟统一在 `MainActivity` + Compose 界面中完成。
 - **小米钱包的「默认卡 / 智能选卡 / 双击电源键刷卡」会接管 NFC 控制器的整条 ISO-DEP 通道。** 开启时 `dumpsys nfc` 会显示 `mEnableHostRouting: false`、`Default route: secure element`，且 `Empty_AID` 指向 SE——此时任何**没有显式 host 条目**的 AID 都会被送进安全元件，本应用的 HCE 服务收不到任何 APDU（读卡器读到的是系统「碰一碰」的 `com.xiaomi.mi_connect_service:tap_top`，或安全元件返回的 `6A82`）。由于 **AID 路由在会话的第一个 `SELECT AID` 时即绑定**，首个 SELECT 一旦落到 SE，后续所有 APDU（包括平台自己的 NDEF 检查）都进不了 host，表现为完全读不到内容。
-- **上述问题的修复**：关闭「默认卡 / 智能选卡 / 双击电源键刷卡」，并把「默认钱包应用」改为非钱包应用，然后重启一次 NFC。恢复后 `dumpsys nfc` 应显示 `mEnableHostRouting: true`、`Default route: host`、`Empty_AID → 0x00`，且 `AID_F012345678` 有显式的 host 条目。诊断命令：`adb shell dumpsys nfc | Select-String "mEnableHostRouting|Default route|Empty_AID|AID_F012345678"`。
+- **上述问题的修复**：关闭「默认卡 / 智能选卡 / 双击电源键刷卡」，并把「默认钱包应用」改为非钱包应用，然后重启一次 NFC。**判据是 `Default route: host` 与 `Empty_AID → 0x00`**（`mEnableHostRouting` 并非决定性字段，实测有设备在问题解决后它仍显示 `false`）。诊断命令：`adb shell dumpsys nfc | Select-String "Default route|Empty_AID|AID_F012345678|AID_D2760000850101"`。
 - Wi-Fi WSC 记录（`application/vnd.wfa.wsc`）的**写入与解析均遵循 Wi-Fi Simple Configuration 规范**：属性 `0x1003` = Authentication Type、`0x100F` = Encryption Type、`0x1027` = Network Key、`0x1045` = SSID，取值表同样按规范实现，可与标准第三方读写器互操作。
 - Wi-Fi 密码、蓝牙 MAC 等数据以标准（未加密）格式存储在标签中，请勿在公共标签中写入敏感信息。
 - 卡模拟内容为只读模拟（Write Access = Never），读卡方无法修改。
