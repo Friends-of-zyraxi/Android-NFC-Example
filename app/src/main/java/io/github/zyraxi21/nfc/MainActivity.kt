@@ -1214,24 +1214,23 @@ class MainActivity : ComponentActivity() {
             isoDep.connect()
             isoDep.timeout = 1000
 
-            // 首个 SELECT 必须用 T4T AID：小米 HyperOS 的控制器路由表把 D2760000850101 显式
-            // 指向 host，而私有 AID 未必有显式条目、可能命中 Empty_AID 兜底被送到 SE。
-            // 会话的路由在第一个 SELECT AID 时就绑定，一旦落到 SE，后续所有 APDU
-            //（包括平台自己的 NDEF 检查）都进不了 host，表现为读不到任何内容。
-            val t4tSelect = byteArrayOf(
-                0x00, 0xA4.toByte(), 0x04, 0x00, 0x07,
-                0xD2.toByte(), 0x76, 0x00, 0x00, 0x85.toByte(), 0x01, 0x01
+            // 首个 SELECT 用私有 AID：它在两台设备的控制器路由表里都有一条指向 host 的显式条目；
+            // 而 T4T AID(D2760000850101) 可能同时存在一条指向 SE 的同名条目（红米即如此），
+            // 若首个 SELECT 落到 SE，整条 ISO-DEP 会话就被绑定，后续 APDU 全部读不到。
+            val privSelect = byteArrayOf(
+                0x00, 0xA4.toByte(), 0x04, 0x00, 0x05,
+                0xF0.toByte(), 0x12, 0x34, 0x56, 0x78
             )
-            val t4tResp = isoDep.transceive(t4tSelect)
-            if (!t4tResp.endsWithSuccess()) {
-                Log.i(TAG, "HCE: SELECT T4T AID -> ${t4tResp.swString()}, fallback to private AID")
-                val privSelect = byteArrayOf(
-                    0x00, 0xA4.toByte(), 0x04, 0x00, 0x05,
-                    0xF0.toByte(), 0x12, 0x34, 0x56, 0x78
+            val privResp = isoDep.transceive(privSelect)
+            if (!privResp.endsWithSuccess()) {
+                Log.i(TAG, "HCE: SELECT private AID -> ${privResp.swString()}, fallback to T4T AID")
+                val t4tSelect = byteArrayOf(
+                    0x00, 0xA4.toByte(), 0x04, 0x00, 0x07,
+                    0xD2.toByte(), 0x76, 0x00, 0x00, 0x85.toByte(), 0x01, 0x01
                 )
-                val privResp = isoDep.transceive(privSelect)
-                if (!privResp.endsWithSuccess()) {
-                    Log.i(TAG, "HCE: SELECT private AID -> ${privResp.swString()}, not this app's emulated card")
+                val t4tResp = isoDep.transceive(t4tSelect)
+                if (!t4tResp.endsWithSuccess()) {
+                    Log.i(TAG, "HCE: SELECT T4T AID -> ${t4tResp.swString()}, not this app's emulated card")
                     return null
                 }
             }
