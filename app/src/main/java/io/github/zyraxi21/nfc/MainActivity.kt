@@ -1208,12 +1208,27 @@ class MainActivity : ComponentActivity() {
             isoDep.connect()
             isoDep.timeout = 1000
 
-            // SELECT 私有 AID
-            val selectAid = byteArrayOf(
-                0x00, 0xA4.toByte(), 0x04, 0x00, 0x05,
-                0xF0.toByte(), 0x12, 0x34, 0x56, 0x78
+            // 首个 SELECT 必须用 T4T AID：小米 HyperOS 的控制器路由表把 D2760000850101 显式
+            // 指向 host，而私有 AID 未必有显式条目、可能命中 Empty_AID 兜底被送到 SE。
+            // 会话的路由在第一个 SELECT AID 时就绑定，一旦落到 SE，后续所有 APDU
+            //（包括平台自己的 NDEF 检查）都进不了 host，表现为读不到任何内容。
+            val t4tSelect = byteArrayOf(
+                0x00, 0xA4.toByte(), 0x04, 0x00, 0x07,
+                0xD2.toByte(), 0x76, 0x00, 0x00, 0x85.toByte(), 0x01, 0x01
             )
-            if (!isoDep.transceive(selectAid).endsWithSuccess()) return null
+            val t4tResp = isoDep.transceive(t4tSelect)
+            if (!t4tResp.endsWithSuccess()) {
+                Log.i(TAG, "HCE: SELECT T4T AID -> ${t4tResp.swString()}, fallback to private AID")
+                val privSelect = byteArrayOf(
+                    0x00, 0xA4.toByte(), 0x04, 0x00, 0x05,
+                    0xF0.toByte(), 0x12, 0x34, 0x56, 0x78
+                )
+                val privResp = isoDep.transceive(privSelect)
+                if (!privResp.endsWithSuccess()) {
+                    Log.i(TAG, "HCE: SELECT private AID -> ${privResp.swString()}, not this app's emulated card")
+                    return null
+                }
+            }
 
             // 分块读回模拟数据：CMD_READ_EMULATED_DATA 的 P1P2 是偏移量，单块最多 CHUNK_SIZE 字节
             val buffer = ByteArrayOutputStream()
@@ -1226,7 +1241,10 @@ class MainActivity : ComponentActivity() {
                     0x00
                 )
                 val resp = isoDep.transceive(readCmd)
-                if (!resp.endsWithSuccess()) return null
+                if (!resp.endsWithSuccess()) {
+                    Log.w(TAG, "HCE: read at offset=$offset failed, sw=${resp.swString()}")
+                    return null
+                }
                 val payload = resp.copyOf(resp.size - 2)
                 buffer.write(payload)
                 // 不满一块说明已读到末尾
@@ -1253,6 +1271,10 @@ class MainActivity : ComponentActivity() {
     /** 响应是否以 SW=9000 结尾 */
     private fun ByteArray.endsWithSuccess(): Boolean =
         size >= 2 && this[size - 2] == 0x90.toByte() && this[size - 1] == 0x00.toByte()
+
+    /** 状态字字符串，用于判断响应究竟由哪一端给出 */
+    private fun ByteArray.swString(): String =
+        if (size >= 2) "%02X%02X".format(this[size - 2], this[size - 1]) else "n/a"
 
     private fun showSnackbar(message: String) {
         val host = snackbarHostState ?: return

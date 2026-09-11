@@ -70,7 +70,9 @@
 2. 将手机靠近 NFC 读卡器（或另一台开启读卡功能的手机）
 3. 点击「停止模拟」结束卡模拟
 
-> HCE 服务注册在 `other` 类别（不参与「触碰付款」）。**在小米 HyperOS 设备上，标准 T4T AID `D2760000850101` 被系统写死在 NFC 控制器的路由表里指向 SE**，第三方应用无法接管该通路；因此两台设备之间的互通依赖私有 AID `F012345678`，**收发两端都需要安装本应用**。
+> HCE 服务注册在 `other` 类别（不参与「触碰付款」）。互通需要**收发两端都安装本应用**。
+>
+> ⚠️ **小米 HyperOS 设备必须先关闭小米钱包的刷卡接管**：设置 → NFC → 关闭「默认卡 / 智能选卡 / 双击电源键刷卡」，并把「默认钱包应用」改为非钱包应用。否则 NFC 控制器会把整条 ISO-DEP 通道连同兜底路由交给安全元件，本应用收不到任何 APDU。详见文末「已知限制与注意事项」。
 >
 > **注意：** 本应用仅在小米 HyperOS 3 设备上测试通过，其他机型可能不支持 HCE 服务。
 
@@ -139,7 +141,8 @@
 - **NFC P2P（Android Beam）自 Android 10 起被系统移除**，因此端对端功能改用 Google Nearby Connections（蓝牙 / Wi-Fi 直连）实现。
 - Nearby Connections 从 2026 年底起不再自动开启 Wi-Fi / 蓝牙；应用会在启动广播或发现前检查无线装置，并在关闭时引导用户手动开启。
 - 早期的独立 Activity 实现（`ReadCard.kt`、`WriteCard.kt`、`CardEmulationDeviceActivity`、`P2PCommunication.kt`）已全部清理，读写卡与卡模拟统一在 `MainActivity` + Compose 界面中完成。
-- **小米 HyperOS 会把标准 T4T AID `D2760000850101` 写死在 NFC 控制器的路由表里指向 SE**：`dumpsys nfc` 中可见 `AID_D2760000850101 → NFCEE_ID 0x10`，读卡器读到的是系统「碰一碰」的 `com.xiaomi.mi_connect_service:tap_top`，本应用的 HCE 服务收不到任何 APDU——应用层的首选服务与默认支付服务设置都无效。这是厂商在控制器层的行为，应用侧无法绕过，因此互通改走私有 AID。
+- **小米钱包的「默认卡 / 智能选卡 / 双击电源键刷卡」会接管 NFC 控制器的整条 ISO-DEP 通道。** 开启时 `dumpsys nfc` 会显示 `mEnableHostRouting: false`、`Default route: secure element`，且 `Empty_AID` 指向 SE——此时任何**没有显式 host 条目**的 AID 都会被送进安全元件，本应用的 HCE 服务收不到任何 APDU（读卡器读到的是系统「碰一碰」的 `com.xiaomi.mi_connect_service:tap_top`，或安全元件返回的 `6A82`）。由于 **AID 路由在会话的第一个 `SELECT AID` 时即绑定**，首个 SELECT 一旦落到 SE，后续所有 APDU（包括平台自己的 NDEF 检查）都进不了 host，表现为完全读不到内容。
+- **上述问题的修复**：设置 → NFC → 关闭「默认卡 / 智能选卡 / 双击电源键刷卡」，并把「默认钱包应用」改为非钱包应用，然后重启一次 NFC。恢复后 `dumpsys nfc` 应显示 `mEnableHostRouting: true`、`Default route: host`、`Empty_AID → 0x00`，且 `AID_F012345678` 有显式的 host 条目。诊断命令：`adb shell dumpsys nfc | Select-String "mEnableHostRouting|Default route|Empty_AID|AID_F012345678"`。
 - 写卡端生成的 Wi-Fi WSC 记录符合规范；但**读卡端解析时认证类型（0x1003）与加密类型（0x100F）的映射互换了**，读取自家写入的 Wi-Fi 标签时「认证/加密类型」可能显示相反，与标准第三方读写器互操作时也需注意。
 - Wi-Fi 密码、蓝牙 MAC 等数据以标准（未加密）格式存储在标签中，请勿在公共标签中写入敏感信息。
 - 卡模拟内容为只读模拟（Write Access = Never），读卡方无法修改。
