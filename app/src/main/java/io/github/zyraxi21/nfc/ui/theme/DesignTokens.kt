@@ -304,7 +304,7 @@ fun FluentSnackbarHost(state: SnackbarState?) {
                     .fillMaxWidth()
                     .padding(
                         horizontal = FluentSpacing.mPlus,
-                        vertical = FluentSpacing.m
+                        vertical = FluentSpacing.l
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
