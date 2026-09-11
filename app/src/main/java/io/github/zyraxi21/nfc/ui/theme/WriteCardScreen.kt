@@ -3,29 +3,20 @@ package io.github.zyraxi21.nfc.ui.theme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.microsoft.fluentui.tokenized.controls.BasicCard
-import com.microsoft.fluentui.tokenized.controls.Button
-import com.microsoft.fluentui.tokenized.controls.TextField
-import com.microsoft.fluentui.tokenized.menu.Menu
-import com.microsoft.fluentui.tokenized.progress.CircularProgressIndicator
 import com.microsoft.fluentui.theme.token.controlTokens.ButtonStyle
+import com.microsoft.fluentui.tokenized.progress.CircularProgressIndicator
 import io.github.zyraxi21.nfc.R
 
 // =======================================================================
@@ -121,197 +112,123 @@ fun WriteCardScreen(
                 interactionSource = remember { MutableInteractionSource() }
             ) { focusManager.clearFocus() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        PageColumn(verticalArrangement = Arrangement.spacedBy(FluentSpacing.m)) {
             // ---- 标题 ----
-            // Title 2: 20sp / 24sp Medium
-            BasicText(
+            FluentText(
                 text = stringResource(R.string.title_write_card),
-                style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium),
-                modifier = Modifier.padding(bottom = 16.dp)
+                style = FluentTextStyle.Title3
             )
 
-            // ---- 类型选择下拉框 ----
+            // ---- 类型选择下拉框（浮层宽度与按钮对齐） ----
             var typeExpanded by remember { mutableStateOf(false) }
-            Box {
-                Button(
-                    onClick = { typeExpanded = true },
-                    style = ButtonStyle.OutlinedButton,
-                    text = stringResource(R.string.format_type_label, stringResource(selectedType.labelResId)),
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
-                Menu(
-                    opened = typeExpanded,
-                    onDismissRequest = { typeExpanded = false }
-                ) {
-                    Column(modifier = Modifier.width(220.dp)) {
-                        WriteDataType.entries.forEach { type ->
-                            BasicText(
-                                text = stringResource(type.labelResId),
-                                style = TextStyle(fontSize = 16.sp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        selectedType = type
-                                        typeExpanded = false
-                                    }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                            )
-                        }
-                    }
+            FluentDropdown(
+                text = stringResource(R.string.format_type_label, stringResource(selectedType.labelResId)),
+                expanded = typeExpanded,
+                onExpandedChange = { typeExpanded = it },
+                options = WriteDataType.entries.map { stringResource(it.labelResId) },
+                onOptionSelected = { index ->
+                    selectedType = WriteDataType.entries[index]
+                    typeExpanded = false
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            )
 
             // ---- 动态输入区域 ----
             when (selectedType) {
                 WriteDataType.TEXT -> {
-                    TextField(
+                    FluentTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        label = stringResource(R.string.label_text_content),
-                        modifier = Modifier.fillMaxWidth(0.85f)
+                        label = stringResource(R.string.label_text_content)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    BasicText(
+                    FluentText(
                         text = stringResource(R.string.hint_text_format),
-                        style = TextStyle(fontSize = 12.sp, color = Color.Gray)
+                        style = FluentTextStyle.Caption1,
+                        color = AppTheme.textHint
                     )
                 }
 
                 WriteDataType.URL -> {
-                    TextField(
+                    FluentTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
                         label = stringResource(R.string.label_url_input),
-                        hintText = stringResource(R.string.placeholder_url_example),
-                        modifier = Modifier.fillMaxWidth(0.85f)
+                        hintText = stringResource(R.string.placeholder_url_example)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    BasicText(
+                    FluentText(
                         text = stringResource(R.string.hint_url_format),
-                        style = TextStyle(fontSize = 12.sp, color = Color.Gray)
+                        style = FluentTextStyle.Caption1,
+                        color = AppTheme.textHint
                     )
                 }
 
                 WriteDataType.WIFI -> {
-                    TextField(
+                    FluentTextField(
                         value = wifiSsid,
                         onValueChange = { wifiSsid = it },
-                        label = stringResource(R.string.label_wifi_ssid),
-                        modifier = Modifier.fillMaxWidth(0.85f)
+                        label = stringResource(R.string.label_wifi_ssid)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    TextField(
+                    FluentTextField(
                         value = wifiPassword,
                         onValueChange = { wifiPassword = it },
-                        label = stringResource(R.string.label_wifi_password),
-                        modifier = Modifier.fillMaxWidth(0.85f)
+                        label = stringResource(R.string.label_wifi_password)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
 
                     // 加密类型下拉
                     var encExpanded by remember { mutableStateOf(false) }
-                    Box(modifier = Modifier.fillMaxWidth(0.85f)) {
-                        Button(
-                            onClick = { encExpanded = true },
-                            style = ButtonStyle.OutlinedButton,
-                            text = stringResource(R.string.label_encryption_type) + ": " + stringResource(wifiEncryption.displayResId),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Menu(
-                            opened = encExpanded,
-                            onDismissRequest = { encExpanded = false }
-                        ) {
-                            Column(modifier = Modifier.width(220.dp)) {
-                                WifiEncryption.entries.forEach { enc ->
-                                    BasicText(
-                                        text = stringResource(enc.displayResId),
-                                        style = TextStyle(fontSize = 16.sp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                wifiEncryption = enc
-                                                encExpanded = false
-                                            }
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-                                }
-                            }
+                    FluentDropdown(
+                        text = stringResource(R.string.label_encryption_type) + ": " + stringResource(wifiEncryption.displayResId),
+                        expanded = encExpanded,
+                        onExpandedChange = { encExpanded = it },
+                        options = WifiEncryption.entries.map { stringResource(it.displayResId) },
+                        onOptionSelected = { index ->
+                            wifiEncryption = WifiEncryption.entries[index]
+                            encExpanded = false
                         }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    )
 
                     // 认证类型下拉
                     var authExpanded by remember { mutableStateOf(false) }
-                    Box(modifier = Modifier.fillMaxWidth(0.85f)) {
-                        Button(
-                            onClick = { authExpanded = true },
-                            style = ButtonStyle.OutlinedButton,
-                            text = stringResource(R.string.label_auth_type) + ": " + stringResource(wifiAuth.displayResId),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Menu(
-                            opened = authExpanded,
-                            onDismissRequest = { authExpanded = false }
-                        ) {
-                            Column(modifier = Modifier.width(220.dp)) {
-                                WifiAuth.entries.forEach { auth ->
-                                    BasicText(
-                                        text = stringResource(auth.displayResId),
-                                        style = TextStyle(fontSize = 16.sp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                wifiAuth = auth
-                                                authExpanded = false
-                                            }
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-                                }
-                            }
+                    FluentDropdown(
+                        text = stringResource(R.string.label_auth_type) + ": " + stringResource(wifiAuth.displayResId),
+                        expanded = authExpanded,
+                        onExpandedChange = { authExpanded = it },
+                        options = WifiAuth.entries.map { stringResource(it.displayResId) },
+                        onOptionSelected = { index ->
+                            wifiAuth = WifiAuth.entries[index]
+                            authExpanded = false
                         }
-                    }
+                    )
                 }
 
                 WriteDataType.BLUETOOTH -> {
-                    TextField(
+                    FluentTextField(
                         value = btMac,
                         onValueChange = { btMac = it },
                         label = stringResource(R.string.label_bt_mac),
-                        hintText = stringResource(R.string.placeholder_bt_mac),
-                        modifier = Modifier.fillMaxWidth(0.85f)
+                        hintText = stringResource(R.string.placeholder_bt_mac)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    TextField(
+                    FluentTextField(
                         value = btName,
                         onValueChange = { btName = it },
                         label = stringResource(R.string.label_bt_name),
-                        hintText = stringResource(R.string.placeholder_bt_name),
-                        modifier = Modifier.fillMaxWidth(0.85f)
+                        hintText = stringResource(R.string.placeholder_bt_name)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    BasicText(
+                    FluentText(
                         text = stringResource(R.string.hint_bt_format),
-                        style = TextStyle(fontSize = 12.sp, color = Color.Gray)
+                        style = FluentTextStyle.Caption1,
+                        color = AppTheme.textHint
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(FluentSpacing.s))
 
             // ---- 写入标签 + 卡模拟 按钮（并列） ----
             Row(
-                modifier = Modifier.fillMaxWidth(0.85f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(FluentSpacing.m)
             ) {
-                Button(
+                FluentButton(
                     onClick = {
                         when (selectedType) {
                             WriteDataType.TEXT -> onWriteText(textInput)
@@ -322,10 +239,12 @@ fun WriteCardScreen(
                     },
                     text = stringResource(R.string.button_write_tag),
                     enabled = writeState == WriteState.IDLE,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = PageMetrics.minTouchTarget)
                 )
 
-                Button(
+                FluentButton(
                     onClick = {
                         onStartEmulation(
                             selectedType, textInput,
@@ -335,9 +254,13 @@ fun WriteCardScreen(
                     },
                     text = stringResource(R.string.button_card_emulation),
                     enabled = writeState == WriteState.IDLE,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = PageMetrics.minTouchTarget)
                 )
             }
+
+            Spacer(modifier = Modifier.height(FluentSpacing.s))
         }
 
         // ================================================================
@@ -351,73 +274,78 @@ fun WriteCardScreen(
                     dismissOnClickOutside = false
                 )
             ) {
-                BasicCard(
+                FluentCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(FluentSpacing.mPlus)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(FluentSpacing.xl),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         when (writeState) {
                             WriteState.WAITING_FOR_CARD -> {
                                 CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(16.dp))
-                                BasicText(
+                                Spacer(modifier = Modifier.height(FluentSpacing.mPlus))
+                                FluentText(
                                     text = writeStatusMessage.ifEmpty { stringResource(R.string.dialog_tap_card) },
-                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
+                                    style = FluentTextStyle.Body1
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
+                                Spacer(modifier = Modifier.height(FluentSpacing.mPlus))
+                                FluentButton(
                                     onClick = onCancelWrite,
                                     style = ButtonStyle.TextButton,
-                                    text = stringResource(R.string.button_cancel)
+                                    text = stringResource(R.string.button_cancel),
+                                    modifier = Modifier.heightIn(min = PageMetrics.minTouchTarget)
                                 )
                             }
 
                             WriteState.WRITING -> {
                                 CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(16.dp))
-                                BasicText(
+                                Spacer(modifier = Modifier.height(FluentSpacing.mPlus))
+                                FluentText(
                                     text = stringResource(R.string.dialog_writing),
-                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
+                                    style = FluentTextStyle.Body1
                                 )
                             }
 
                             WriteState.SUCCESS -> {
-                                BasicText(
+                                FluentText(
                                     text = writeStatusMessage.ifEmpty { stringResource(R.string.dialog_write_success) },
-                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
+                                    style = FluentTextStyle.Body1Strong,
+                                    color = AppTheme.success
                                 )
                             }
 
                             WriteState.FAILED -> {
-                                BasicText(
+                                FluentText(
                                     text = writeStatusMessage.ifEmpty { stringResource(R.string.dialog_write_failed) },
-                                    style = TextStyle(fontSize = 16.sp, color = Color.Red, textAlign = TextAlign.Center)
+                                    style = FluentTextStyle.Body1Strong,
+                                    color = AppTheme.danger
                                 )
                             }
 
                             WriteState.EMULATING -> {
                                 CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(16.dp))
-                                BasicText(
+                                Spacer(modifier = Modifier.height(FluentSpacing.mPlus))
+                                FluentText(
                                     text = stringResource(R.string.dialog_emulation_started),
-                                    style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center)
+                                    style = FluentTextStyle.Body1Strong
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                BasicText(
+                                Spacer(modifier = Modifier.height(FluentSpacing.s))
+                                FluentText(
                                     text = stringResource(R.string.dialog_approach_reader),
-                                    style = TextStyle(fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                                    style = FluentTextStyle.Body2,
+                                    color = AppTheme.textHint
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
+                                Spacer(modifier = Modifier.height(FluentSpacing.mPlus))
+                                FluentButton(
                                     onClick = onCancelWrite,
                                     style = ButtonStyle.TextButton,
-                                    text = stringResource(R.string.dialog_button_stop_emulation)
+                                    text = stringResource(R.string.dialog_button_stop_emulation),
+                                    modifier = Modifier.heightIn(min = PageMetrics.minTouchTarget)
                                 )
                             }
 
@@ -433,13 +361,43 @@ fun WriteCardScreen(
 // =======================================================================
 // 预览
 // =======================================================================
-@Preview(showBackground = true)
+@Preview(name = "写卡 · 浅色", showBackground = true)
 @Composable
-fun PreviewWriteCardScreen() {
-    MyApplicationTheme {
+private fun PreviewWriteCardScreenLight() {
+    MyApplicationTheme(darkTheme = false, dynamicColor = false) {
         WriteCardScreen(
             writeState = WriteState.IDLE,
             writeStatusMessage = "",
+            onWriteText = {},
+            onWriteUrl = {},
+            onWriteWifi = { _, _, _, _ -> },
+            onWriteBluetooth = { _, _ -> }
+        )
+    }
+}
+
+@Preview(name = "写卡 · 深色", showBackground = true)
+@Composable
+private fun PreviewWriteCardScreenDark() {
+    MyApplicationTheme(darkTheme = true, dynamicColor = false) {
+        WriteCardScreen(
+            writeState = WriteState.IDLE,
+            writeStatusMessage = "",
+            onWriteText = {},
+            onWriteUrl = {},
+            onWriteWifi = { _, _, _, _ -> },
+            onWriteBluetooth = { _, _ -> }
+        )
+    }
+}
+
+@Preview(name = "写卡 · 深色 · 失败弹窗", showBackground = true)
+@Composable
+private fun PreviewWriteCardScreenDarkFailed() {
+    MyApplicationTheme(darkTheme = true, dynamicColor = false) {
+        WriteCardScreen(
+            writeState = WriteState.FAILED,
+            writeStatusMessage = "写入失败: 标签不可写",
             onWriteText = {},
             onWriteUrl = {},
             onWriteWifi = { _, _, _, _ -> },

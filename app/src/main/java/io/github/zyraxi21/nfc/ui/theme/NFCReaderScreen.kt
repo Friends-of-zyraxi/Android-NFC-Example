@@ -1,27 +1,37 @@
 package io.github.zyraxi21.nfc.ui.theme
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.microsoft.fluentui.tokenized.controls.BasicCard
-import com.microsoft.fluentui.tokenized.controls.Button
+import androidx.compose.ui.res.stringResource
 import com.microsoft.fluentui.tokenized.notification.NotificationResult
 import com.microsoft.fluentui.tokenized.notification.SnackbarState
 import io.github.zyraxi21.nfc.R
 import io.github.zyraxi21.nfc.util.checkNfcAvailability
 import kotlinx.coroutines.launch
 
+/**
+ * 读卡页。
+ *
+ * 布局规范：
+ * - 左右边距由 `PageColumn` 统一提供（手机 24dp、宽屏 32/40dp），任何文字与控件都不贴屏。
+ * - 所有文字统一居中，且颜色由 `FluentText` 显式指定，不依赖 `LocalContentColor`。
+ * - 内容卡片用 `weight(1f)` 撑满剩余空间，内部可滚动，因为 NDEF 解析结果长度不可预期
+ *   （Wi-Fi / 蓝牙记录可能带十六进制转储）。
+ */
 @Composable
 fun NFCReaderScreen(
     tagInfo: String,
@@ -59,76 +69,97 @@ fun NFCReaderScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Title 2: 20sp / 24sp Medium
-        BasicText(
+    PageColumn(verticalArrangement = Arrangement.spacedBy(FluentSpacing.m)) {
+        FluentText(
             text = stringResource(R.string.reader_title),
-            style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium),
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .align(Alignment.CenterHorizontally)
-                .wrapContentSize(Alignment.Center)
-                .padding(24.dp)
+            style = FluentTextStyle.Title3
         )
 
         if (isButtonVisible) {
-            Button(
+            FluentButton(
                 onClick = onCheckNfcClick,
                 text = stringResource(R.string.reader_check_nfc),
                 modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .padding(top = 16.dp)
-                    .align(Alignment.CenterHorizontally)
+                    .fillMaxWidth()
+                    .heightIn(min = PageMetrics.minTouchTarget)
             )
         }
 
-        BasicText(
+        FluentText(
             text = stringResource(R.string.reader_supported_formats),
-            style = TextStyle(fontSize = 12.sp, color = Color.Gray),
+            style = FluentTextStyle.Caption1,
+            color = AppTheme.textHint
+        )
+
+        // 标签类型信息：无标签时显示扫描提示
+        FluentText(
+            text = tagInfo.ifEmpty { stringResource(R.string.reader_scan_hint) },
+            style = if (tagInfo.isEmpty()) FluentTextStyle.Body2 else FluentTextStyle.Body2Strong
+        )
+
+        FluentCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
-        )
-
-        BasicText(
-            text = tagInfo.ifEmpty { stringResource(R.string.reader_scan_hint) },
-            style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center),
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .padding(top = 16.dp)
-                .align(Alignment.CenterHorizontally)
-        )
-
-        BasicCard(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
                 .weight(1f)
-                .padding(vertical = 16.dp)
-                .align(Alignment.CenterHorizontally)
+                .heightIn(min = 180.dp)
         ) {
-            BasicText(
-                text = tagContent.ifEmpty { stringResource(R.string.reader_display_hint) },
-                style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Center),
+            Box(
                 modifier = Modifier
-                    .padding(12.dp)
-                    .wrapContentSize(Alignment.Center)
-                    .align(alignment = Alignment.CenterHorizontally)
-            )
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(FluentSpacing.mPlus),
+                contentAlignment = Alignment.Center
+            ) {
+                FluentText(
+                    text = tagContent.ifEmpty { stringResource(R.string.reader_display_hint) },
+                    style = FluentTextStyle.Body2,
+                    color = if (tagContent.isEmpty()) AppTheme.textHint else AppTheme.textPrimary,
+                    maxLines = Int.MAX_VALUE,
+                    overflow = TextOverflow.Clip
+                )
+            }
         }
+
+        // 卡片与底栏之间留出呼吸空间，避免最后一行内容紧贴底栏边缘
+        Spacer(modifier = Modifier.height(FluentSpacing.s))
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "读卡 · 浅色", showBackground = true)
 @Composable
-fun NFCReaderScreenPreview() {
-    NFCReaderScreen(
-        tagInfo = "已扫描标签: Tag[ID:1234]",
-        tagContent = "文本: Hello, NFC!\nURI: https://example.com",
-        isButtonVisible = true,
-        onCheckNfcClick = {},
-    )
+private fun NFCReaderScreenPreviewLight() {
+    MyApplicationTheme(darkTheme = false, dynamicColor = false) {
+        NFCReaderScreen(
+            tagInfo = "该 NFC 标签的类型：TAG: Tech [android.nfc.tech.Ndef]",
+            tagContent = "文本: Hello, NFC!\nURI: https://example.com",
+            isButtonVisible = true,
+            onCheckNfcClick = {},
+        )
+    }
+}
+
+@Preview(name = "读卡 · 深色", showBackground = true)
+@Composable
+private fun NFCReaderScreenPreviewDark() {
+    MyApplicationTheme(darkTheme = true, dynamicColor = false) {
+        NFCReaderScreen(
+            tagInfo = "该 NFC 标签的类型：TAG: Tech [android.nfc.tech.Ndef]",
+            tagContent = "文本: Hello, NFC!\nURI: https://example.com",
+            isButtonVisible = true,
+            onCheckNfcClick = {},
+        )
+    }
+}
+
+@Preview(name = "读卡 · 深色 · 空", showBackground = true)
+@Composable
+private fun NFCReaderScreenPreviewDarkEmpty() {
+    MyApplicationTheme(darkTheme = true, dynamicColor = false) {
+        NFCReaderScreen(
+            tagInfo = "",
+            tagContent = "",
+            isButtonVisible = true,
+            onCheckNfcClick = {},
+        )
+    }
 }
