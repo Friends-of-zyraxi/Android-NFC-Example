@@ -59,6 +59,34 @@ enum class WifiAuth(val displayResId: Int, val wscValue: Int) {
     WPA3_SAE(R.string.auth_wpa3_sae_short, 0x0040)
 }
 
+/**
+ * 表单占位符 = 默认值。
+ * 用户留空时直接用这些内容完成功能，不再弹"请输入"提示。
+ * 蓝牙类型需 MAC 和设备名称**同时**留空才使用默认值。
+ */
+object FormDefaults {
+    const val TEXT = "你好，哈尔滨工业大学！"
+    const val URL = "https://www.hit.edu.cn/"
+    const val WIFI_SSID = "HIT-WLAN"
+    const val WIFI_PASSWORD = "hit_1920"
+    const val BT_MAC = "11:22:33:AA:BB:CC"
+    const val BT_NAME = "HIT NFC 设备"
+
+    /** 文本/网址：留空则用默认值 */
+    fun resolveTextOrUrl(input: String): String =
+        input.ifBlank { if (input.isEmpty()) TEXT else URL }
+
+    /** Wi-Fi：SSID 和密码各自独立，留空用各自默认值 */
+    fun resolveWifiSsid(ssid: String): String = ssid.ifBlank { WIFI_SSID }
+    fun resolveWifiPassword(password: String): String = password.ifBlank { WIFI_PASSWORD }
+
+    /** 蓝牙：两框同时留空才用默认值；只填一个则另一个也用默认值 */
+    fun resolveBluetooth(mac: String, name: String): Pair<String, String> {
+        if (mac.isBlank() && name.isBlank()) return BT_MAC to BT_NAME
+        return mac.ifBlank { BT_MAC } to name.ifBlank { BT_NAME }
+    }
+}
+
 
 // =======================================================================
 // 统一的写卡界面
@@ -138,7 +166,8 @@ fun WriteCardScreen(
                     FluentTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        label = stringResource(R.string.label_text_content)
+                        label = stringResource(R.string.label_text_content),
+                        hintText = FormDefaults.TEXT
                     )
                     FluentText(
                         text = stringResource(R.string.hint_text_format),
@@ -152,7 +181,7 @@ fun WriteCardScreen(
                         value = textInput,
                         onValueChange = { textInput = it },
                         label = stringResource(R.string.label_url_input),
-                        hintText = stringResource(R.string.placeholder_url_example)
+                        hintText = FormDefaults.URL
                     )
                     FluentText(
                         text = stringResource(R.string.hint_url_format),
@@ -165,12 +194,14 @@ fun WriteCardScreen(
                     FluentTextField(
                         value = wifiSsid,
                         onValueChange = { wifiSsid = it },
-                        label = stringResource(R.string.label_wifi_ssid)
+                        label = stringResource(R.string.label_wifi_ssid),
+                        hintText = FormDefaults.WIFI_SSID
                     )
                     FluentTextField(
                         value = wifiPassword,
                         onValueChange = { wifiPassword = it },
-                        label = stringResource(R.string.label_wifi_password)
+                        label = stringResource(R.string.label_wifi_password),
+                        hintText = FormDefaults.WIFI_PASSWORD
                     )
 
                     // 加密类型下拉
@@ -205,13 +236,13 @@ fun WriteCardScreen(
                         value = btMac,
                         onValueChange = { btMac = it },
                         label = stringResource(R.string.label_bt_mac),
-                        hintText = stringResource(R.string.placeholder_bt_mac)
+                        hintText = FormDefaults.BT_MAC
                     )
                     FluentTextField(
                         value = btName,
                         onValueChange = { btName = it },
                         label = stringResource(R.string.label_bt_name),
-                        hintText = stringResource(R.string.placeholder_bt_name)
+                        hintText = FormDefaults.BT_NAME
                     )
                     FluentText(
                         text = stringResource(R.string.hint_bt_format),
@@ -231,10 +262,17 @@ fun WriteCardScreen(
                 FluentButton(
                     onClick = {
                         when (selectedType) {
-                            WriteDataType.TEXT -> onWriteText(textInput)
-                            WriteDataType.URL -> onWriteUrl(textInput)
-                            WriteDataType.WIFI -> onWriteWifi(wifiSsid, wifiPassword, wifiEncryption, wifiAuth)
-                            WriteDataType.BLUETOOTH -> onWriteBluetooth(btMac, btName)
+                            WriteDataType.TEXT -> onWriteText(textInput.ifBlank { FormDefaults.TEXT })
+                            WriteDataType.URL -> onWriteUrl(textInput.ifBlank { FormDefaults.URL })
+                            WriteDataType.WIFI -> onWriteWifi(
+                                FormDefaults.resolveWifiSsid(wifiSsid),
+                                FormDefaults.resolveWifiPassword(wifiPassword),
+                                wifiEncryption, wifiAuth
+                            )
+                            WriteDataType.BLUETOOTH -> {
+                                val (mac, name) = FormDefaults.resolveBluetooth(btMac, btName)
+                                onWriteBluetooth(mac, name)
+                            }
                         }
                     },
                     text = stringResource(R.string.button_write_tag),
@@ -246,10 +284,16 @@ fun WriteCardScreen(
 
                 FluentButton(
                     onClick = {
+                        val resolvedText = textInput.ifBlank {
+                            if (selectedType == WriteDataType.URL) FormDefaults.URL else FormDefaults.TEXT
+                        }
+                        val resolvedSsid = FormDefaults.resolveWifiSsid(wifiSsid)
+                        val resolvedPass = FormDefaults.resolveWifiPassword(wifiPassword)
+                        val (resolvedMac, resolvedName) = FormDefaults.resolveBluetooth(btMac, btName)
                         onStartEmulation(
-                            selectedType, textInput,
-                            wifiSsid, wifiPassword, wifiEncryption, wifiAuth,
-                            btMac, btName
+                            selectedType, resolvedText,
+                            resolvedSsid, resolvedPass, wifiEncryption, wifiAuth,
+                            resolvedMac, resolvedName
                         )
                     },
                     text = stringResource(R.string.button_card_emulation),

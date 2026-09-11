@@ -156,7 +156,7 @@ private val BLEND_TO_BLACK = Color(0xFF000000)
  * 若某级目标亮度超出"该色相+饱和度在亮度 1.0 时"能达到的上限（黄色系必然如此），
  * 直接取该上限（即 l = 1.0 的最亮端），保证色阶仍然单调、不出现回退。
  */
-internal fun generateBrandRamp(seed: Int): Map<FluentAliasTokens.BrandColorTokens, Color> {
+internal fun generateBrandRamp(seed: Int, saturationScale: Float = 1f): Map<FluentAliasTokens.BrandColorTokens, Color> {
     val base = Color(seed or 0xFF000000.toInt())
     val maxChannel = maxOf(base.red, base.green, base.blue)
     val minChannel = minOf(base.red, base.green, base.blue)
@@ -164,11 +164,13 @@ internal fun generateBrandRamp(seed: Int): Map<FluentAliasTokens.BrandColorToken
     val chroma = maxChannel - minChannel
 
     // 只取色相与饱和度，亮度完全由官方色阶的亮度基准决定
-    val saturation = when {
+    val rawSaturation = when {
         chroma == 0f -> 0f
         lightness < 0.5f -> chroma / (maxChannel + minChannel)
         else -> chroma / (2f - maxChannel - minChannel)
     }.coerceIn(0f, 1f)
+    // 深色模式下 Monet primary 偏亮偏艳，按 saturationScale 降饱和
+    val saturation = (rawSaturation * saturationScale).coerceIn(0f, 1f)
     val hue = when {
         chroma == 0f -> 0f
         maxChannel == base.red ->
@@ -206,8 +208,8 @@ private fun colorAtLuminance(hue: Float, saturation: Float, targetLuminance: Dou
 }
 
 /** 用自定义品牌色阶替换 Fluent 默认色阶，其余 alias token 沿用官方实现。 */
-private class MonetAliasTokens(seed: Int?) : AliasTokens() {
-    private val ramp = seed?.let { generateBrandRamp(it) } ?: FLUENT_BRAND_RAMP
+private class MonetAliasTokens(seed: Int?, saturationScale: Float = 1f) : AliasTokens() {
+    private val ramp = seed?.let { generateBrandRamp(it, saturationScale) } ?: FLUENT_BRAND_RAMP
 
     override val brandColor: TokenSet<FluentAliasTokens.BrandColorTokens, Color>
         get() = TokenSet { token ->
@@ -254,7 +256,10 @@ fun MyApplicationTheme(
             null
         }
     }
-    val aliasTokens = remember(monetSeed) { MonetAliasTokens(monetSeed) }
+    val aliasTokens = remember(monetSeed, darkTheme) {
+        // 深色模式下降饱和度：Monet dark primary 本身偏艳，按钮等大面积品牌色会过亮
+        MonetAliasTokens(monetSeed, saturationScale = if (darkTheme) 0.55f else 1f)
+    }
 
     FluentTheme(
         aliasTokens = aliasTokens,

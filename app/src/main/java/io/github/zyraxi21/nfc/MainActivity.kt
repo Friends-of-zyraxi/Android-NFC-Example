@@ -70,7 +70,8 @@ class MainActivity : ComponentActivity() {
     // 读卡 UI 状态 (来自 ReadCard.kt)
     private var tagInfo by mutableStateOf("")
     private var tagContent by mutableStateOf("")
-    private var isReaderButtonVisible by mutableStateOf(true) // 为了避免冲突重命名
+    // 默认隐藏；自检发现 NFC 不可用/未启用时才显示检查按钮
+    private var isReaderButtonVisible by mutableStateOf(false)
 
     // 写卡 UI 状态 (来自 WriteCard.kt)
     enum class WriteMode { IDLE, TEXT, URL, WIFI, BLUETOOTH }
@@ -222,6 +223,27 @@ class MainActivity : ComponentActivity() {
                 val coroutineScope = rememberCoroutineScope()
                 snackbarHostState = remember { SnackbarState() }
 
+                // ---- App 级 NFC 自检：启动时检查一次，正常则静默隐藏按钮 ----
+                var nfcChecked by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    if (!nfcChecked) {
+                        nfcChecked = true
+                        checkNfcAvailability { messageRes, actionRes, action ->
+                            if (messageRes != R.string.msg_nfc_available) {
+                                coroutineScope.launch {
+                                    val result = snackbarHostState!!.showSnackbar(
+                                        message = getString(messageRes),
+                                        actionText = if (actionRes != 0) getString(actionRes) else null
+                                    )
+                                    if (result == NotificationResult.CLICKED) {
+                                        action?.invoke()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // ---- 权限请求 ----
                 val nearbyPermissions = buildNearbyPermissions()
                 var hasNearbyPermissions by remember {
@@ -252,7 +274,6 @@ class MainActivity : ComponentActivity() {
                             tagInfo = tagInfo,
                             tagContent = tagContent,
                             isButtonVisible = isReaderButtonVisible,
-                            snackbarHostState = snackbarHostState!!,
                             onCheckNfcClick = {
                                 checkNfcAvailability { messageRes, actionRes, action ->
                                     coroutineScope.launch {
@@ -458,18 +479,20 @@ class MainActivity : ComponentActivity() {
     ): Boolean {
         return when {
             nfcAdapter == null -> {
+                isReaderButtonVisible = true
                 showMessage(R.string.msg_nfc_unavailable, R.string.button_exit) { finish() }
                 false
             }
             !nfcAdapter!!.isEnabled -> {
+                isReaderButtonVisible = true
                 showMessage(R.string.msg_nfc_not_enabled, R.string.button_open_settings) {
                     startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
                 }
                 false
             }
             else -> {
-                showMessage(R.string.msg_nfc_available, 0, null)
                 isReaderButtonVisible = false
+                showMessage(R.string.msg_nfc_available, 0, null)
                 true
             }
         }

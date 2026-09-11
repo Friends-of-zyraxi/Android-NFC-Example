@@ -72,10 +72,17 @@ fun P2PScreen(
     }
 
     fun buildFormattedMessage(): String = when (selectedType) {
-        WriteDataType.TEXT -> "TEXT:$textInput"
-        WriteDataType.URL -> "URL:$textInput"
-        WriteDataType.WIFI -> "WIFI:$wifiSsid|$wifiPassword|${wifiEncryption.wscValue}|${wifiAuth.wscValue}"
-        WriteDataType.BLUETOOTH -> "BT:$btMac|$btName"
+        WriteDataType.TEXT -> "TEXT:${textInput.ifBlank { FormDefaults.TEXT }}"
+        WriteDataType.URL -> "URL:${textInput.ifBlank { FormDefaults.URL }}"
+        WriteDataType.WIFI -> {
+            val ssid = FormDefaults.resolveWifiSsid(wifiSsid)
+            val pass = FormDefaults.resolveWifiPassword(wifiPassword)
+            "WIFI:$ssid|$pass|${wifiEncryption.wscValue}|${wifiAuth.wscValue}"
+        }
+        WriteDataType.BLUETOOTH -> {
+            val (mac, name) = FormDefaults.resolveBluetooth(btMac, btName)
+            "BT:$mac|$name"
+        }
     }
 
     Box(
@@ -125,44 +132,13 @@ fun P2PScreen(
 
                 // Nearby 无线装置引导：API 不再自动开启蓝牙 / Wi-Fi
                 nearbyRadioWarning?.let { message ->
-                    FluentCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(FluentSpacing.mPlus),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            FluentText(
-                                text = message,
-                                style = FluentTextStyle.Body2,
-                                color = AppTheme.danger
-                            )
-                            Spacer(modifier = Modifier.height(FluentSpacing.m))
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(FluentSpacing.s),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (!isBluetoothEnabled) {
-                                    FluentButton(
-                                        onClick = onEnableBluetooth,
-                                        text = stringResource(R.string.p2p_button_enable_bluetooth),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .heightIn(min = PageMetrics.minTouchTarget)
-                                    )
-                                }
-                                if (!isWiFiEnabled) {
-                                    FluentButton(
-                                        onClick = onEnableWiFi,
-                                        text = stringResource(R.string.p2p_button_enable_wifi),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .heightIn(min = PageMetrics.minTouchTarget)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    RadioWarningCard(
+                        message = message,
+                        isBluetoothEnabled = isBluetoothEnabled,
+                        isWiFiEnabled = isWiFiEnabled,
+                        onEnableBluetooth = onEnableBluetooth,
+                        onEnableWiFi = onEnableWiFi
+                    )
                 }
 
                 // ========================================================
@@ -170,10 +146,13 @@ fun P2PScreen(
                 // ========================================================
                 when (connectionState) {
                     ConnectionState.DISCONNECTED -> {
+                        Spacer(modifier = Modifier.height(FluentSpacing.xl))
                         FluentText(
                             text = stringResource(R.string.p2p_label_select_mode),
                             style = FluentTextStyle.Body1Strong
                         )
+                        // 加大标签与按钮的垂直间距
+                        Spacer(modifier = Modifier.height(FluentSpacing.xl))
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(FluentSpacing.m),
                             modifier = Modifier.fillMaxWidth()
@@ -284,7 +263,8 @@ fun P2PScreen(
                                 FluentTextField(
                                     value = textInput,
                                     onValueChange = { textInput = it },
-                                    label = stringResource(R.string.label_text_content)
+                                    label = stringResource(R.string.label_text_content),
+                                    hintText = FormDefaults.TEXT
                                 )
                             }
                             WriteDataType.URL -> {
@@ -292,19 +272,21 @@ fun P2PScreen(
                                     value = textInput,
                                     onValueChange = { textInput = it },
                                     label = stringResource(R.string.label_url_input),
-                                    hintText = stringResource(R.string.placeholder_url_example)
+                                    hintText = FormDefaults.URL
                                 )
                             }
                             WriteDataType.WIFI -> {
                                 FluentTextField(
                                     value = wifiSsid,
                                     onValueChange = { wifiSsid = it },
-                                    label = stringResource(R.string.label_wifi_ssid)
+                                    label = stringResource(R.string.label_wifi_ssid),
+                                    hintText = FormDefaults.WIFI_SSID
                                 )
                                 FluentTextField(
                                     value = wifiPassword,
                                     onValueChange = { wifiPassword = it },
-                                    label = stringResource(R.string.label_wifi_password)
+                                    label = stringResource(R.string.label_wifi_password),
+                                    hintText = FormDefaults.WIFI_PASSWORD
                                 )
 
                                 var encExpanded by remember { mutableStateOf(false) }
@@ -336,23 +318,18 @@ fun P2PScreen(
                                     value = btMac,
                                     onValueChange = { btMac = it },
                                     label = stringResource(R.string.label_bt_mac),
-                                    hintText = stringResource(R.string.placeholder_bt_mac)
+                                    hintText = FormDefaults.BT_MAC
                                 )
                                 FluentTextField(
                                     value = btName,
                                     onValueChange = { btName = it },
                                     label = stringResource(R.string.label_bt_name),
-                                    hintText = stringResource(R.string.placeholder_bt_name)
+                                    hintText = FormDefaults.BT_NAME
                                 )
                             }
                         }
 
-                        // ---- 发送按钮 ----
-                        val canSend = when (selectedType) {
-                            WriteDataType.TEXT, WriteDataType.URL -> textInput.isNotEmpty()
-                            WriteDataType.WIFI -> wifiSsid.isNotEmpty()
-                            WriteDataType.BLUETOOTH -> btMac.isNotEmpty()
-                        }
+                        // ---- 发送按钮（留空时自动用占位符默认值） ----
                         FluentButton(
                             onClick = {
                                 val formatted = buildFormattedMessage()
@@ -360,7 +337,6 @@ fun P2PScreen(
                                 onSendMessage(formatted)
                             },
                             text = stringResource(R.string.p2p_button_send),
-                            enabled = canSend,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = PageMetrics.minTouchTarget)
@@ -379,6 +355,57 @@ fun P2PScreen(
                         // 与底栏之间留出呼吸空间
                         Spacer(modifier = Modifier.height(FluentSpacing.s))
                     }
+                }
+            }
+        }
+    }
+}
+
+// =======================================================================
+// 无线装置未开启的引导卡片
+// =======================================================================
+@Composable
+private fun RadioWarningCard(
+    message: String,
+    isBluetoothEnabled: Boolean,
+    isWiFiEnabled: Boolean,
+    onEnableBluetooth: () -> Unit,
+    onEnableWiFi: () -> Unit
+) {
+    FluentCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(FluentSpacing.mPlus),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            FluentText(
+                text = message,
+                style = FluentTextStyle.Body2,
+                color = AppTheme.danger
+            )
+            Spacer(modifier = Modifier.height(FluentSpacing.m))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(FluentSpacing.s),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (!isBluetoothEnabled) {
+                    FluentButton(
+                        onClick = onEnableBluetooth,
+                        text = stringResource(R.string.p2p_button_enable_bluetooth),
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = PageMetrics.minTouchTarget)
+                    )
+                }
+                if (!isWiFiEnabled) {
+                    FluentButton(
+                        onClick = onEnableWiFi,
+                        text = stringResource(R.string.p2p_button_enable_wifi),
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = PageMetrics.minTouchTarget)
+                    )
                 }
             }
         }

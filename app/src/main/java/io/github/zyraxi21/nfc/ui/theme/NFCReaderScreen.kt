@@ -10,18 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import com.microsoft.fluentui.tokenized.notification.NotificationResult
-import com.microsoft.fluentui.tokenized.notification.SnackbarState
 import io.github.zyraxi21.nfc.R
-import io.github.zyraxi21.nfc.util.checkNfcAvailability
-import kotlinx.coroutines.launch
 
 /**
  * 读卡页。
@@ -37,38 +32,8 @@ fun NFCReaderScreen(
     tagInfo: String,
     tagContent: String,
     isButtonVisible: Boolean,
-    snackbarHostState: SnackbarState? = null,
     onCheckNfcClick: () -> Unit = {},
 ) {
-    val coroutineScope = rememberCoroutineScope()
-
-    // 冷启动时自动检查一次，后续不再自动检查
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var hasAutoChecked by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (!hasAutoChecked && snackbarHostState != null) {
-            hasAutoChecked = true
-            checkNfcAvailability(
-                context = context,
-                isFirstCheck = true,
-                showMessage = { messageRes, actionRes, action ->
-                    // NFC 正常时不弹 Snackbar，只在有问题时提示
-                    if (messageRes != R.string.msg_nfc_available) {
-                        coroutineScope.launch {
-                            val result = snackbarHostState.showSnackbar(
-                                message = context.getString(messageRes),
-                                actionText = if (actionRes != 0) context.getString(actionRes) else null
-                            )
-                            if (result == NotificationResult.CLICKED) {
-                                action?.invoke()
-                            }
-                        }
-                    }
-                }
-            )
-        }
-    }
-
     PageColumn(verticalArrangement = Arrangement.spacedBy(FluentSpacing.m)) {
         FluentText(
             text = stringResource(R.string.reader_title),

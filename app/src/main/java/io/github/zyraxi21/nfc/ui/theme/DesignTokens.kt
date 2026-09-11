@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -291,8 +292,9 @@ fun FluentSnackbarHost(state: SnackbarState?) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    start = LocalPageGutter.current,
-                    end = LocalPageGutter.current,
+                    // 比内容页 gutter（24dp）稍窄，Snackbar 视觉上更宽但仍留边距
+                    start = FluentSpacing.mPlus,
+                    end = FluentSpacing.mPlus,
                     bottom = FluentSpacing.snackbarBottomSpacing
                 ),
             shape = RoundedCornerShape(FluentShapes.radius),
@@ -904,7 +906,11 @@ fun FluentTextField(
 ) {
     val tokens = rememberAppTextFieldTokens()
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        // heightIn 保证最小高度，同时允许内容增长（多行文本）
+        // 不用固定 height：会裁切文字和缩小内部清空按钮
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp),
         shape = RoundedCornerShape(FluentShapes.radius),
         color = AppTheme.surface,
         border = BorderStroke(1.dp, AppTheme.stroke)
