@@ -1,5 +1,6 @@
 package io.github.zyraxi21.nfc.ui.theme
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -23,11 +24,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.microsoft.fluentui.theme.FluentTheme
-import com.microsoft.fluentui.tokenized.AppBar
+import com.microsoft.fluentui.theme.token.FluentAliasTokens
 import com.microsoft.fluentui.tokenized.navigation.TabBar
 import com.microsoft.fluentui.tokenized.navigation.TabData
 import com.microsoft.fluentui.tokenized.notification.Snackbar
@@ -75,31 +77,61 @@ fun BottomNavigationApp(
     }
 
     val isDark = isSystemInDarkTheme()
+    val brandColor = FluentTheme.aliasTokens.brandColor[FluentAliasTokens.BrandColorTokens.Color80]
+    val surfaceColor = if (isDark) Color(0xFF1B1A19) else Color(0xFFF3F2F1)
+    val onBrandColor = Color.White
+
     Scaffold(
-        containerColor = if (isDark) Color(0xFF1B1A19) else Color(0xFFF3F2F1),
+        // 关闭 Scaffold 默认的系统栏 insets，由顶栏/底栏自行处理，
+        // 使背景色能贯通状态栏和手势条
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        containerColor = surfaceColor,
         snackbarHost = { snackbarHostState?.let { Snackbar(it) } },
         topBar = {
-            Column(modifier = Modifier.statusBarsPadding()) {
-                AppBar(
-                    title = stringResource(R.string.app_title),
-                    centerAlignAppBar = true
-                )
-                // Caption 2: 12sp / 16sp
-                BasicText(
-                    text = stringResource(R.string.version_label),
-                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(bottom = 4.dp)
-                )
+            // 品牌色背景贯通状态栏，内容在色块内部下移
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(brandColor)
+            ) {
+                Column(modifier = Modifier.statusBarsPadding()) {
+                    // 标题栏
+                    BasicText(
+                        text = stringResource(R.string.app_title),
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = onBrandColor
+                        ),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                    // 版本号放在标题栏内
+                    BasicText(
+                        text = stringResource(R.string.version_label),
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = onBrandColor.copy(alpha = 0.75f)
+                        ),
+                        modifier = Modifier.padding(start = 16.dp, bottom = 10.dp)
+                    )
+                }
             }
         },
         bottomBar = {
-            Column(modifier = Modifier.navigationBarsPadding()) {
+            // 底栏背景贯通手势条，TabBar 内容在色块内部上移
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(surfaceColor)
+            ) {
                 TabBar(
                     tabDataList = tabDataList,
                     selectedIndex = selectedItemIndex
                 )
+                // 手势条区域用同色填充，避免 TabBar 下方留白
+                Spacer(modifier = Modifier.navigationBarsPadding())
             }
         }
     ) { innerPadding ->

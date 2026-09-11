@@ -26,6 +26,7 @@ import android.Manifest
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import com.microsoft.fluentui.tokenized.notification.NotificationResult
@@ -139,6 +140,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         // 恢复卡模拟状态：Activity 重建后若状态退回 IDLE，onResume 会重新打开 reader mode，
         // 而 reader mode 会关闭卡模拟，正在进行的模拟会因此失效。
