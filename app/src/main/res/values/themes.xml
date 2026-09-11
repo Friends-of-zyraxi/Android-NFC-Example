@@ -1,30 +1,40 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.MyApplication" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowTranslucentStatus">false</item>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ================================================================== -->
+    <!-- 窗口主题                                                            -->
+    <!--                                                                     -->
+    <!-- 这里只负责"窗口"层面：窗口背景 + 系统栏。                             -->
+    <!-- 控件配色一律由 Compose 侧的 MyApplicationTheme（Fluent 2 alias      -->
+    <!-- token）决定，两处不要互相重复定义颜色。                              -->
+    <!--                                                                     -->
+    <!-- 命名注意：不要把基础主题命名成 "Base.Theme.Xxx"。Android 会把 style  -->
+    <!-- 名字里第一个点当作父样式分隔符，Base.Theme.MyApplication 会被解析为   -->
+    <!-- "继承名为 Base.Theme 的样式"，从而报 resource style/Base.Theme       -->
+    <!-- not found。多级主题统一放在 values/ 与 values-night/ 两个目录里，    -->
+    <!-- 由 DayNight 资源限定符切换，不要使用 values-vNN 做主题叠加。          -->
+    <!-- ================================================================== -->
+
+    <!--
+      基础主题：DayNight + 无 ActionBar。
+      界面完全由 Compose 绘制，因此不引入 Material 控件主题，
+      避免 Material 的 colorPrimary 等属性与 Fluent 主题产生颜色竞争。
+    -->
+    <style name="BaseTheme_MyApplication" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- 窗口背景与 Fluent 的 CanvasBackground 对齐（浅色 #F5F5F5）。
+             深色值见 values-night/colors.xml（#141414）。
+             不设置的话，冷启动首帧会闪出系统默认白底，在深色模式下尤其刺眼。 -->
+        <item name="android:windowBackground">@color/fluent_canvas</item>
+        <!-- 内容自行处理系统栏 insets（见 MainActivity 的 enableEdgeToEdge）。 -->
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-    </style>
-    <!-- Base application theme. -->
-    <style name="Base.Theme.MyApplication" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- 系统栏本身透明，让内容真正铺到状态栏与导航栏之下 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <!-- 浅色窗口背景之上，系统栏图标需要深色（true = 使用深色图标）。
+             深色模式在 values-night/themes.xml 中覆盖为 false。 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
-    <style name="Theme.NFCDemo" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@android:color/white</item>
-    </style>
+    <style name="Theme.MyApplication" parent="BaseTheme_MyApplication" />
 </resources>

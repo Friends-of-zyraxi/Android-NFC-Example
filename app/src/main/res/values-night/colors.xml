@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      深色模式窗口级颜色。
+      与 Compose 侧 AppTheme.canvas（Fluent NeutralBackgroundColor.CanvasBackground
+      的 dark 值）保持一致，保证冷启动首帧到首帧 Compose 绘制之间不闪白。
+    -->
+    <color name="fluent_canvas">#FF141414</color>
+</resources>

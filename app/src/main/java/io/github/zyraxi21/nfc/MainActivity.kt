@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.res.Configuration
 import android.nfc.cardemulation.CardEmulation
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -24,6 +25,7 @@ import android.util.Log
 import android.Manifest
 
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -140,7 +142,34 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        // edge-to-edge 的系统栏图标明暗必须自己按应用主题决定，不能交给 enableEdgeToEdge() 的
+        // 默认值（它跟随系统 isSystemInDarkTheme 判断）。理由：顶栏是品牌色/深色表面，
+        // 状态栏图标压在它上面。深色模式下顶栏是 #292929，若仍用深色图标就完全看不见——
+        // 这正是之前截图里状态栏几乎不可读的原因。
+        val darkMode = resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        val statusBarIconStyle = if (darkMode) {
+            SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        } else {
+            SystemBarStyle.light(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        }
+        // 导航栏底色由 Theme 里的 windowBackground 与底栏同色，这里只需保证图标明暗一致
+        val navigationBarIconStyle = if (darkMode) {
+            SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        } else {
+            SystemBarStyle.light(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        }
+        enableEdgeToEdge(
+            statusBarStyle = statusBarIconStyle,
+            navigationBarStyle = navigationBarIconStyle
+        )
 
         // 恢复卡模拟状态：Activity 重建后若状态退回 IDLE，onResume 会重新打开 reader mode，
         // 而 reader mode 会关闭卡模拟，正在进行的模拟会因此失效。
