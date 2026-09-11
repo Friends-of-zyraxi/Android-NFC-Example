@@ -13,9 +13,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.microsoft.fluentui.theme.FluentTheme
+import com.microsoft.fluentui.theme.token.FluentAliasTokens
 import com.microsoft.fluentui.theme.token.controlTokens.ButtonStyle
 import com.microsoft.fluentui.tokenized.controls.BasicCard
 import com.microsoft.fluentui.tokenized.controls.Button
@@ -125,10 +128,10 @@ fun P2PScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 标题
+                // 标题 — Title 1: 24sp / 32sp Bold
                 BasicText(
                     text = stringResource(R.string.p2p_title),
-                    style = TextStyle(fontSize = 24.sp),
+                    style = TextStyle(fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
@@ -176,7 +179,7 @@ fun P2PScreen(
                     ConnectionState.DISCONNECTED -> {
                         BasicText(
                             text = stringResource(R.string.p2p_label_select_mode),
-                            style = TextStyle(fontSize = 16.sp),
+                            style = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         Row(
@@ -200,7 +203,7 @@ fun P2PScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         BasicText(
                             text = stringResource(R.string.p2p_text_waiting_reader),
-                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center)
+                            style = TextStyle(fontSize = 14.sp, color = FluentTheme.aliasTokens.brandColor[FluentAliasTokens.BrandColorTokens.Color80], textAlign = TextAlign.Center)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
@@ -215,7 +218,7 @@ fun P2PScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         BasicText(
                             text = stringResource(R.string.p2p_text_approach_device),
-                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center)
+                            style = TextStyle(fontSize = 14.sp, color = FluentTheme.aliasTokens.brandColor[FluentAliasTokens.BrandColorTokens.Color80], textAlign = TextAlign.Center)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
@@ -230,14 +233,14 @@ fun P2PScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         BasicText(
                             text = stringResource(R.string.p2p_text_connecting),
-                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center)
+                            style = TextStyle(fontSize = 14.sp, color = FluentTheme.aliasTokens.brandColor[FluentAliasTokens.BrandColorTokens.Color80], textAlign = TextAlign.Center)
                         )
                     }
 
                     ConnectionState.CONNECTED -> {
                         BasicText(
                             text = stringResource(R.string.p2p_text_connected),
-                            style = TextStyle(fontSize = 14.sp, color = Color(0xFF0078D4), textAlign = TextAlign.Center),
+                            style = TextStyle(fontSize = 14.sp, color = FluentTheme.aliasTokens.brandColor[FluentAliasTokens.BrandColorTokens.Color80], textAlign = TextAlign.Center),
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
 
@@ -250,7 +253,7 @@ fun P2PScreen(
                             Column(modifier = Modifier.padding(16.dp)) {
                                 BasicText(
                                     text = stringResource(R.string.p2p_label_received),
-                                    style = TextStyle(fontSize = 16.sp)
+                                    style = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 if (receivedNearbyMessage.isEmpty()) {

@@ -84,9 +84,10 @@ fun BottomNavigationApp(
                     title = stringResource(R.string.app_title),
                     centerAlignAppBar = true
                 )
+                // Caption 2: 12sp / 16sp
                 BasicText(
                     text = stringResource(R.string.version_label),
-                    style = TextStyle(fontSize = 12.sp),
+                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 4.dp)

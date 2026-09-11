@@ -91,7 +91,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
-    // Fluent Design：按需引入模块化依赖（版本对齐源码仓库 config.gradle）
+    // Fluent Design：按需引入模块化依赖
     implementation("com.microsoft.fluentui:fluentui_core:0.3.11")
     implementation("com.microsoft.fluentui:fluentui_controls:0.3.3")
     implementation("com.microsoft.fluentui:fluentui_progress:0.3.7")
