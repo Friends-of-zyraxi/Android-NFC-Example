@@ -1,13 +1,20 @@
 package io.github.zyraxi21.nfc.ui.theme
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -20,13 +27,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -35,6 +45,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
@@ -62,6 +73,9 @@ import com.microsoft.fluentui.tokenized.controls.BasicCard
 import com.microsoft.fluentui.tokenized.controls.Button
 import com.microsoft.fluentui.tokenized.controls.TextField
 import com.microsoft.fluentui.tokenized.menu.Menu
+import com.microsoft.fluentui.tokenized.notification.SnackbarState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Fluent 2 设计令牌在本工程的唯一入口。
@@ -98,6 +112,14 @@ object FluentSpacing {
     val xxxl: Dp = 32.dp
     val huge: Dp = 40.dp
     val massive: Dp = 48.dp
+
+    /**
+     * Snackbar 与底部导航栏之间的间距。
+     *
+     * Scaffold 会把 `snackbarHost` 紧贴在底栏上沿，不留空隙，视觉上像粘在一起；
+     * 这里让出 16dp 让两者分开。
+     */
+    val snackbarBottomSpacing: Dp = mPlus
 }
 
 /**
@@ -146,21 +168,23 @@ val LocalPageGutter = staticCompositionLocalOf { PageMetrics.compactGutter }
 /**
  * 形状令牌（Fluent 2 Shapes）。
  *
- * 全应用只保留**两档**圆角，避免同一屏里出现 4/8/12dp 三种圆角拼在一起的杂乱感：
+ * 全应用**只有一个圆角值**：16dp（Fluent `CornerRadius160`）。
+ * 按钮、输入框、下拉选择框、卡片、菜单浮层、对话框、Snackbar 全部取 [radius]。
  *
- * - [control] 用于所有控件：按钮、文本输入框、下拉选择框。取 12dp（Fluent `CornerRadius120`）。
- *   控件本身高度只有 48dp 左右，圆角再大就会趋近胶囊形、失去矩形控件的识别度。
- * - [container] 用于所有容器：卡片、菜单浮层、对话框。取 16dp（Fluent `CornerRadius160`）。
- *
- * 注意 `control` 与 `container` 之外**不要再新增档位**。Fluent 自带的默认值是
- * 按钮 4dp / 菜单 8dp / 卡片 12dp，本工程刻意统一上调整体放大。
+ * 保持单一值而不是分档，是因为同一屏里出现 12dp 与 16dp 反而显得不齐；
+ * 统一成一个值后，任何新控件只要引用 [radius] 就自动与既有界面一致。
+ * 48dp 高的控件用 16dp 圆角仍在矩形控件范围内，不会趋近胶囊形
+ * （胶囊形需要半径达到高度的一半，即 24dp）。
  */
 object FluentShapes {
-    /** 控件圆角：按钮、输入框、下拉选择框。 */
-    val control: Dp = FluentGlobalTokens.CornerRadiusTokens.CornerRadius120.value
+    /** 全局唯一的圆角值。 */
+    val radius: Dp = FluentGlobalTokens.CornerRadiusTokens.CornerRadius160.value
 
-    /** 容器圆角：卡片、菜单浮层、对话框。 */
-    val container: Dp = FluentGlobalTokens.CornerRadiusTokens.CornerRadius160.value
+    /** 兼容旧调用点：控件圆角，等同于 [radius]。 */
+    val control: Dp get() = radius
+
+    /** 兼容旧调用点：容器圆角，等同于 [radius]。 */
+    val container: Dp get() = radius
 }
 
 /** 高度令牌（Fluent 2 Elevation）。 */
@@ -196,30 +220,122 @@ object FluentMotion {
 // 那会牺牲运行期换肤能力。按控件传 tokens 是官方支持、影响面最小的方式。
 // =======================================================================
 
-/** 全局按钮圆角：[FluentShapes.control]。 */
+/** 全局按钮圆角：[FluentShapes.radius]。 */
 @Composable
 private fun appButtonTokens(): ButtonTokens = remember {
     object : ButtonTokens() {
         @Composable
-        override fun cornerRadius(buttonInfo: ButtonInfo): Dp = FluentShapes.control
+        override fun cornerRadius(buttonInfo: ButtonInfo): Dp = FluentShapes.radius
     }
 }
 
-/** 全局卡片圆角：[FluentShapes.container]。 */
+/** 全局卡片圆角：[FluentShapes.radius]。 */
 @Composable
 private fun appCardTokens(): BasicCardTokens = remember {
     object : BasicCardTokens() {
         @Composable
-        override fun cornerRadius(basicCardInfo: BasicCardInfo): Dp = FluentShapes.container
+        override fun cornerRadius(basicCardInfo: BasicCardInfo): Dp = FluentShapes.radius
     }
 }
 
-/** 全局菜单浮层圆角：[FluentShapes.container]。 */
+/** 全局菜单浮层圆角：[FluentShapes.radius]。 */
 @Composable
 private fun appMenuTokens(): MenuTokens = remember {
     object : MenuTokens() {
         @Composable
-        override fun cornerRadius(menuInfo: MenuInfo): Dp = FluentShapes.container
+        override fun cornerRadius(menuInfo: MenuInfo): Dp = FluentShapes.radius
+    }
+}
+
+/**
+ * 应用统一的 Snackbar 宿主。
+ *
+ * 为什么不用 Fluent 的 `Snackbar` 组件：
+ * 1. 它的圆角在内部**硬编码为 `RoundedCornerShape(8.dp)`**，`SnackBarTokens` 里
+ *    没有任何圆角令牌，无法通过 token 改成统一的 16dp；
+ * 2. 负责时长与超时逻辑的 `NotificationContainer` 是 `internal`，外部拿不到，
+ *    因此也不能靠"自己画外层、复用内层"来绕过。
+ *
+ * 好在 `SnackbarState.currentSnackbar` 与 `SnackbarMetadata` 都是**公开** API，
+ * 于是这里直接用自己的 Surface 渲染，圆角、间距、配色都走本工程的语义令牌。
+ * 时长与无障碍超时沿用 Fluent 的 `NotificationDuration.convertToMillis`，行为不退化。
+ *
+ * 位置由 Scaffold 决定：`snackbarHost` 槽位会被摆放在底栏**上方**
+ * （`layoutHeight - snackbarHeight - bottomBarHeight`），因此这里只需再让出
+ * 与底栏之间的间距 [snackbarBottomSpacing]，以及页面左右外边距。
+ */
+@Composable
+fun FluentSnackbarHost(state: SnackbarState?) {
+    val metadata = state?.currentSnackbar ?: return
+    val scope = rememberCoroutineScope()
+    val accessibilityManager = LocalAccessibilityManager.current
+
+    // 超时自动关闭：时长换算与 Fluent 实现保持一致，含无障碍推荐时长
+    LaunchedEffect(metadata) {
+        delay(
+            metadata.duration.convertToMillis(
+                hasIcon = metadata.icon != null,
+                hasAction = metadata.actionText != null,
+                accessibilityManager = accessibilityManager
+            )
+        )
+        metadata.timedOut(scope)
+    }
+
+    AnimatedVisibility(
+        visible = true,
+        enter = fadeIn() + slideInVertically { it / 3 },
+        exit = fadeOut()
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = LocalPageGutter.current,
+                    end = LocalPageGutter.current,
+                    bottom = FluentSpacing.snackbarBottomSpacing
+                ),
+            shape = RoundedCornerShape(FluentShapes.radius),
+            color = AppTheme.snackbarSurface,
+            shadowElevation = FluentElevation.raised
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = FluentSpacing.mPlus,
+                        vertical = FluentSpacing.m
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    FluentText(
+                        text = metadata.message,
+                        style = FluentTextStyle.Body2Strong,
+                        color = AppTheme.snackbarText,
+                        centered = false
+                    )
+                    metadata.subTitle?.takeIf { it.isNotBlank() }?.let { subTitle ->
+                        FluentText(
+                            text = subTitle,
+                            style = FluentTextStyle.Body2,
+                            color = AppTheme.snackbarText,
+                            centered = false
+                        )
+                    }
+                }
+
+                metadata.actionText?.takeIf { it.isNotBlank() }?.let { actionText ->
+                    Spacer(modifier = Modifier.width(FluentSpacing.s))
+                    Button(
+                        onClick = { metadata.clicked(scope) },
+                        text = actionText,
+                        style = ButtonStyle.TextButton,
+                        buttonTokens = appButtonTokens()
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -227,7 +343,7 @@ private fun appMenuTokens(): MenuTokens = remember {
  * 统一圆角的应用按钮。
  *
  * 包一层是为了让全应用所有按钮共用一个圆角来源——直接写 `Button(...)` 会拿到 Fluent
- * 默认的 4dp，与本工程的 12dp 不一致。
+ * 默认的 4dp，与本工程的圆角不一致。
  */
 @Composable
 fun FluentButton(
@@ -285,13 +401,19 @@ fun FluentDropdownMenu(
  * 下拉菜单里的一行选项。
  *
  * 统一 48dp 最小高度（Fluent 与 Android 共同要求的触摸目标），文字居中。
+ * 涟漪色显式来自 [AppTheme.ripple]，不能依赖 `LocalIndication`（原因见该属性的说明）。
  */
 @Composable
 fun FluentDropdownItem(text: String, onClick: () -> Unit) {
+    val rippleColor = AppTheme.ripple
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                indication = rememberRipple(color = rippleColor),
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onClick
+            )
             .heightIn(min = PageMetrics.minTouchTarget)
             .padding(horizontal = FluentSpacing.mPlus, vertical = FluentSpacing.s),
         contentAlignment = Alignment.Center
@@ -620,6 +742,50 @@ object AppTheme {
                 FluentAliasTokens.ErrorAndStatusColorTokens.WarningForeground1
             ]
         )
+
+    /**
+     * Snackbar 底色。
+     *
+     * 取 `NeutralBackground4`：浅色 `#FAFAFA` / 深色 `#333333`，
+     * 与 Fluent `SnackBarTokens` 的 Neutral 分支一致，在画布与表面之上都能看出浮起。
+     */
+    val snackbarSurface: Color
+        @Composable
+        get() = resolve(
+            FluentTheme.aliasTokens.neutralBackgroundColor[
+                FluentAliasTokens.NeutralBackgroundColorTokens.Background4
+            ]
+        )
+
+    /** Snackbar 文字色：与 [snackbarSurface] 配对，对比度约 6.2:1（浅）/ 8.9:1（深）。 */
+    val snackbarText: Color
+        @Composable
+        get() = textSecondary
+
+    /**
+     * 点击涟漪色：浅色模式用黑、深色模式用白。
+     *
+     * 与 Fluent `TabItemTokens.rippleColor` 的做法完全一致
+     * （那里就是 `FluentColor(light = Black, dark = White)`）。
+     *
+     * **自实现的可点击控件必须显式把它传给 `clickable(indication = rememberRipple(...))`。**
+     * 不传时 `Modifier.clickable` 会取 `LocalIndication.current`，而本工程的主题栈
+     * （`FluentTheme` + 一个 Material3 的 `CompositionLocalProvider`）并不会把涟漪
+     * 装进这个 CompositionLocal，结果就是"能点但没有任何点击反馈"——
+     * Fluent 的组件之所以没这个问题，是因为它们全部显式传了 `rememberRipple()`。
+     */
+    val ripple: Color
+        @Composable
+        get() = resolve(
+            FluentColor(
+                light = FluentTheme.aliasTokens.neutralForegroundColor[
+                    FluentAliasTokens.NeutralForegroundColorTokens.ForegroundDarkStatic
+                ].value(ThemeMode.Light),
+                dark = FluentTheme.aliasTokens.neutralForegroundColor[
+                    FluentAliasTokens.NeutralForegroundColorTokens.ForegroundLightStatic
+                ].value(ThemeMode.Dark)
+            )
+        )
 }
 
 /**
@@ -739,7 +905,7 @@ fun FluentTextField(
     val tokens = rememberAppTextFieldTokens()
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(FluentShapes.control),
+        shape = RoundedCornerShape(FluentShapes.radius),
         color = AppTheme.surface,
         border = BorderStroke(1.dp, AppTheme.stroke)
     ) {

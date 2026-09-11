@@ -1,6 +1,8 @@
 package io.github.zyraxi21.nfc.ui.theme
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -8,11 +10,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -22,6 +26,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -29,9 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.microsoft.fluentui.tokenized.navigation.TabBar
-import com.microsoft.fluentui.tokenized.navigation.TabData
-import com.microsoft.fluentui.tokenized.notification.Snackbar
+import com.microsoft.fluentui.theme.token.Icon
 import com.microsoft.fluentui.tokenized.notification.SnackbarState
 import io.github.zyraxi21.nfc.R
 import kotlinx.coroutines.launch
@@ -78,18 +81,6 @@ fun BottomNavigationApp(
         selectedItemIndex = pagerState.settledPage
     }
 
-    val tabDataList = navigationItems.mapIndexed { index, item ->
-        TabData(
-            title = stringResource(item.titleResId),
-            icon = item.icon,
-            selected = selectedItemIndex == index,
-            onClick = {
-                selectedItemIndex = index
-                coroutineScope.launch { pagerState.animateScrollToPage(index) }
-            }
-        )
-    }
-
     // 页面外边距需要在 Scaffold 之外算出来，才能同时用于顶栏与页面内容，
     // 保证顶栏文字与页面文字共用同一条竖向基准线。
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -99,9 +90,18 @@ fun BottomNavigationApp(
             // 系统栏 insets 由顶栏/底栏各自消费，避免 Scaffold 再叠加一层留白
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             containerColor = AppTheme.canvas,
-            snackbarHost = { snackbarHostState?.let { Snackbar(it) } },
+            snackbarHost = { FluentSnackbarHost(snackbarHostState) },
             topBar = { AppTopBar(gutter) },
-            bottomBar = { AppBottomBar(tabDataList, selectedItemIndex) }
+            bottomBar = {
+                AppBottomBar(
+                    tabs = navigationItems,
+                    selectedIndex = selectedItemIndex,
+                    onSelect = { index ->
+                        selectedItemIndex = index
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    }
+                )
+            }
         ) { innerPadding ->
             Box(
                 modifier = Modifier
@@ -195,24 +195,120 @@ private fun AppTopBar(gutter: Dp) {
     }
 }
 
+/** 底栏图标尺寸，对标 Fluent TabItem 的 24dp。 */
+private val BottomTabIconSize = 24.dp
+
+/** 内容与顶边之间的留白（对标 Fluent TabItem 的 top padding）。 */
+private val BottomTabTopPadding = FluentSpacing.s
+
 /**
- * 底栏：Fluent `TabBar` + 手势条区域同色填充。
+ * 底栏：自实现，不再直接用 Fluent 的 `TabBar`。
  *
- * `TabBar` 内部未选中项的背景是 `NeutralBackground1`，容器必须用同一个 `surface` 令牌，
- * 否则深色模式下会在底栏左右两侧露出画布底色形成色带。
+ * 为什么必须自己写：`TabBar` 内部的 `Row` 是 `Modifier.fillMaxWidth()`，**没有等高**，
+ * `TabItem` 的 `weight(1F)` 在 `Row` 里只分配宽度，高度仍是内容高度。因此无论给
+ * `TabBar` 加 `navigationBarsPadding()`（只是在 Column 里多出一段空白），还是给
+ * `TabBar` 设一个更大高度（`Row` 不会跟着长高），`TabItem` 的 `clickable` 与涟漪
+ * 都停在手势条上方——按下去能明显看到白色手势条那一段是脱开的。
+ *
+ * 自己写之后布局是确定的：每个 Tab 是一个 `fillMaxHeight` 的点击区，
+ * 高度 = 顶部留白 + 图标 + 文字 + 导航栏 inset，于是**点击与涟漪一直铺到屏幕底部**；
+ * 图标与文字仍停在手势条上方，位置与原来的 `TabBar` 一致。
+ *
+ * inset 由 `WindowInsets.navigationBars` 换算，不硬编码手势条高度；
+ * 三键导航时 inset 更大，同样成立。
+ *
+ * 配色沿用原 `TabBar` 的语义：容器与未选中项背景用同一个 `surface`
+ * （Fluent 的 TabItem 未选中项也是 `NeutralBackground1`），选中项用品牌色。
  */
 @Composable
-private fun AppBottomBar(tabDataList: List<TabData>, selectedIndex: Int) {
+private fun AppBottomBar(
+    tabs: List<NavigationItem>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit
+) {
+    val navigationBarInset = with(LocalDensity.current) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
+    // 内容高度 = 顶部留白 + 图标 + 图标与文字间距 + 文字行高(Caption2)
+    val rowHeight = BottomTabTopPadding + BottomTabIconSize +
+        FluentSpacing.xxs + 16.dp + navigationBarInset
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppTheme.surface)
     ) {
-        TabBar(
-            tabDataList = tabDataList,
-            selectedIndex = selectedIndex
+        // 顶部 1dp 描边：与 Fluent TabBar 的 topBorder 一致，用于分隔内容与底栏
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(AppTheme.stroke)
         )
-        // 手势条区域用同色填充，避免 TabBar 下方留白
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(rowHeight)
+        ) {
+            tabs.forEachIndexed { index, item ->
+                BottomTab(
+                    title = stringResource(item.titleResId),
+                    icon = item.icon,
+                    selected = index == selectedIndex,
+                    onClick = { onSelect(index) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 底栏里的一个 Tab。
+ *
+ * 点击区是整块 `fillMaxHeight` 的 Column（一直铺到屏幕底部），涟漪会填满它。
+ * 视觉内容（图标 + 文字）位于顶部；其下方用 `navigationBarsPadding()`
+ * 撑出手势条区域——这段与 TabItem 的**背景色相同**，因此视觉上背景是连通的，
+ * 不会出现"图标区一块、下面手势条一块"的割裂感。
+ *
+ * 涟漪必须显式传 `rememberRipple()`：`Modifier.clickable` 不传 `indication` 时取
+ * `LocalIndication.current`，而本工程的主题栈并不提供它，漏掉就会"能点但没有反馈"。
+ */
+@Composable
+private fun BottomTab(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val contentColor = if (selected) AppTheme.brand else AppTheme.textSecondary
+    val rippleColor = AppTheme.ripple
+    Column(
+        modifier = modifier.clickable(
+            indication = rememberRipple(color = rippleColor),
+            interactionSource = remember { MutableInteractionSource() },
+            onClick = onClick
+        ),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(BottomTabTopPadding))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(BottomTabIconSize),
+            tint = contentColor
+        )
+        Spacer(modifier = Modifier.height(FluentSpacing.xxs))
+        FluentText(
+            text = title,
+            style = FluentTextStyle.Caption2,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        // 手势条区域：与 Tab 同一背景色，把视觉背景一直铺到屏幕底部
         Spacer(modifier = Modifier.navigationBarsPadding())
     }
 }
